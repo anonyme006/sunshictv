@@ -227,6 +227,77 @@ local function rollReward()
     return cfg.minReward
 end
 
+--- Trouve la ressource banque démarrée (esx_banque, esx_banking, …)
+---@return string|nil
+local function resolveBankResource()
+    local cfg = Config.Bank
+    if not cfg or not cfg.enabled then return nil end
+
+    for _, name in ipairs(cfg.resources or {}) do
+        if GetResourceState(name) == 'started' then
+            return name
+        end
+    end
+    return nil
+end
+
+--- Logue une transaction dans esx_banque / esx_banking (historique UI)
+---@param src number
+---@param amount number
+---@param label string
+local function logBankTransaction(src, amount, label)
+    local resName = resolveBankResource()
+    if not resName then return end
+
+    local logType = (Config.Bank and Config.Bank.logType) or 'DEPOSIT'
+    label = label or 'Carte Chance'
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 then return end
+
+    -- Variantes d'exports courantes (esx_banque / esx_banking)
+    local attempts = {
+        function() exports[resName]:logTransaction(src, label, logType, amount) end,
+        function() exports[resName]:logTransaction(src, logType, amount) end,
+        function() exports[resName]:LogTransaction(src, label, logType, amount) end,
+        function() exports[resName]:LogTransaction(src, logType, amount) end,
+        function() exports[resName]:AddTransaction(src, amount, logType, label) end,
+        function() exports[resName]:addTransaction(src, amount, logType, label) end,
+    }
+
+    for _, fn in ipairs(attempts) do
+        local ok = pcall(fn)
+        if ok then return end
+    end
+
+    -- Events fallback
+    pcall(function()
+        TriggerEvent(resName .. ':logTransaction', src, label, logType, amount)
+    end)
+    pcall(function()
+        TriggerEvent('esx_banking:logTransaction', src, label, logType, amount)
+    end)
+    pcall(function()
+        TriggerEvent('esx_banque:logTransaction', src, label, logType, amount)
+    end)
+end
+
+--- Crédite le compte bank ESX + historique esx_banque
+---@param src number
+---@param xPlayer table
+---@param amount number
+---@param reason string|nil
+local function depositBank(src, xPlayer, amount, reason)
+    amount = math.floor(tonumber(amount) or 0)
+    if amount <= 0 or not xPlayer then return false end
+
+    local account = (Config.ChanceCard and Config.ChanceCard.account) or 'bank'
+    reason = reason or (Config.ChanceCard and Config.ChanceCard.transactionLabel) or 'Carte Chance'
+
+    xPlayer.addAccountMoney(account, amount, reason)
+    logBankTransaction(src, amount, reason)
+    return true
+end
+
 ---@param src number
 ---@param xPlayer table
 local function tryGiveKit(src, xPlayer)
@@ -429,7 +500,8 @@ RegisterNetEvent('starter_pack:claimSpin', function()
     local success = amount > 0
 
     if success then
-        xPlayer.addAccountMoney(Config.ChanceCard.account, amount, 'Carte Chance')
+        local label = Config.ChanceCard.transactionLabel or 'Carte Chance'
+        depositBank(src, xPlayer, amount, label)
         local digits = amount
         if ESX.Math and ESX.Math.GroupDigits then
             digits = ESX.Math.GroupDigits(amount)

@@ -23,6 +23,26 @@ Au premier join, un modèle est tiré dans `Config.GarageVehicle.models` et ins�
 3. Clique sur **Tourner** (une seule fois — la carte est consommée).
 4. Selon le **taux de réussite** (`Config.ChanceCard.successRate`) et les poids de la roue, tu gagnes entre **10 000 $** et **35 000 $** versés sur le compte **bank**.
 
+## Lien esx_banque
+
+Le gain est crédité via ESX (`bank`) **et** loggé dans l’historique banque si `esx_banque` / `esx_banking` est démarré.
+
+```cfg
+ensure es_extended
+ensure esx_banque   # ou esx_banking
+ensure starter_pack
+```
+
+```lua
+Config.Bank = {
+    enabled = true,
+    resources = { 'esx_banque', 'esx_banking' }, -- ordre de détection
+    logType = 'DEPOSIT',
+}
+Config.ChanceCard.account = 'bank'
+Config.ChanceCard.transactionLabel = 'Carte Chance'
+```
+
 ## Installation
 
 1. Copie le dossier `starter_pack` dans `resources/[local]/` (ou ton dossier resources).

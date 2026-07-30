@@ -34,8 +34,9 @@ dependencies {
     'oxmysql',
 }
 
--- Optionnel : ox_target (rangement BMX), ox_lib (progress), ox_inventory
+-- Optionnel : ox_target (rangement BMX), ox_lib (progress), ox_inventory, esx_banque
 -- ensure ox_target
 -- ensure ox_lib
 -- ensure ox_inventory
+-- ensure esx_banque   -- ou esx_banking (historique Carte Chance)
 

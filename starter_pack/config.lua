@@ -123,6 +123,34 @@ Config.ChanceCard = {
 
     -- Compte bancaire ESX : 'bank'
     account = 'bank',
+
+    -- Libellé affiché dans l'historique banque
+    transactionLabel = 'Carte Chance',
+}
+
+--[[
+    Lien banque (esx_banque / esx_banking)
+    Le gain Carte Chance est crédité sur le compte ESX `bank`,
+    puis loggé dans l'historique de ta ressource banque si elle tourne.
+]]
+Config.Bank = {
+    enabled = true,
+
+    -- Nom de la ressource (essaie dans l'ordre)
+    -- Mets 'esx_banque' en premier si c'est le tien
+    resources = {
+        'esx_banque',
+        'esx_banking',
+    },
+
+    -- Type de log (esx_banking officiel : DEPOSIT / WITHDRAW / TRANSFER_RECEIVE)
+    logType = 'DEPOSIT',
+
+    -- Export à appeler (variantes supportées automatiquement) :
+    --   exports['esx_banque']:logTransaction(source, label, logType, amount)
+    --   exports['esx_banque']:logTransaction(source, logType, amount)
+    --   exports['esx_banque']:AddTransaction(...)
+    -- Events fallback : 'esx_banque:logTransaction', 'esx_banking:logTransaction'
 }
 
 -- Messages
