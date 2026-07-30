@@ -44,6 +44,8 @@ Config.JobCreator = {
     enabled = true,
     platePrefixLen = 3,
     resetOutOnRestart = false,
+    -- Autoriser aussi les véhicules perso (owned_vehicles) dans les garages entreprise
+    allowPersonalVehicles = true,
 }
 
 --[[

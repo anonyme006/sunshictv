@@ -96,7 +96,73 @@ local function buildEntry(row)
         body = healthPercent(props.bodyHealth, 1000.0),
         fuel = fuelLevel(props),
         isJob = true,
+        isPersonal = false,
     }
+end
+
+local function personalAllowed()
+    return Config.JobCreator and Config.JobCreator.allowPersonalVehicles ~= false
+end
+
+--- Véhicules perso rangés dans ce garage entreprise (parking = garageId)
+local function fetchPersonalInJobGarage(identifier, garageId)
+    if not personalAllowed() or not garageId or garageId == '' then
+        return {}
+    end
+    if not Config.UseGarageColumn then
+        return {}
+    end
+
+    local tbl = Config.Columns.table
+    local ownerCol = Config.Columns.owner
+    local garageCol = Config.Columns.garage
+    local vehicleCol = Config.Columns.vehicle
+    local plateCol = Config.Columns.plate
+    local storedCol = Config.Columns.stored
+
+    local rows = MySQL.query.await(
+        ('SELECT * FROM `%s` WHERE `%s` = ? AND `%s` = ?'):format(tbl, ownerCol, garageCol),
+        { identifier, garageId }
+    ) or {}
+
+    local list = {}
+    for _, row in ipairs(rows) do
+        local props = decodeProps(row[vehicleCol] or row.vehicle)
+        local model = props.model
+        if type(model) == 'string' then model = joaat(model) end
+        model = tonumber(model) or 0
+
+        local isStored = row[storedCol] == true or row[storedCol] == 1 or row[storedCol] == '1'
+        local plate = row[plateCol] or row.plate
+        local nPlate = normalizePlate(plate)
+
+        -- Réutilise le tracking spawn perso si exposé via event registerSpawn
+        list[#list + 1] = {
+            plate = plate,
+            model = model,
+            label = nil,
+            props = props,
+            stored = isStored,
+            engine = healthPercent(props.engineHealth, 1000.0),
+            body = healthPercent(props.bodyHealth, 1000.0),
+            fuel = fuelLevel(props),
+            garage_id = garageId,
+            isJob = false,
+            isPersonal = true,
+            nPlate = nPlate,
+        }
+    end
+    return list
+end
+
+local function getOwnedPersonalRow(identifier, plate)
+    local tbl = Config.Columns.table
+    local ownerCol = Config.Columns.owner
+    local plateCol = Config.Columns.plate
+    return MySQL.single.await(
+        ('SELECT * FROM `%s` WHERE `%s` = ? AND REPLACE(UPPER(`%s`), " ", "") = ?'):format(tbl, ownerCol, plateCol),
+        { identifier, plate }
+    )
 end
 
 MySQL.ready(function()
@@ -267,7 +333,23 @@ lib.callback.register('ox_garage:getJobVehicles', function(source, jobName, gara
         end
     end
 
-    return { ok = true, vehicles = list }
+    -- Véhicules perso rangés ici
+    local personal = fetchPersonalInJobGarage(xPlayer.identifier, garageId)
+    for _, entry in ipairs(personal) do
+        list[#list + 1] = entry
+    end
+
+    table.sort(list, function(a, b)
+        if a.stored ~= b.stored then
+            return a.stored and not b.stored
+        end
+        if a.isPersonal ~= b.isPersonal then
+            return not a.isPersonal and b.isPersonal -- flotte avant perso
+        end
+        return (a.plate or '') < (b.plate or '')
+    end)
+
+    return { ok = true, vehicles = list, allowPersonal = personalAllowed() }
 end)
 
 lib.callback.register('ox_garage:getJobVehicle', function(source, plate)
@@ -279,19 +361,85 @@ lib.callback.register('ox_garage:getJobVehicle', function(source, plate)
         'SELECT * FROM ox_garage_job_vehicles WHERE REPLACE(UPPER(plate), " ", "") = ?',
         { plate }
     )
-    if not row then return nil end
-    if xPlayer.job.name ~= row.job_name then return nil end
-    if (xPlayer.job.grade or 0) < (row.min_grade or 0) then return nil end
-    return buildEntry(row)
+    if row then
+        if xPlayer.job.name ~= row.job_name then return nil end
+        if (xPlayer.job.grade or 0) < (row.min_grade or 0) then return nil end
+        return buildEntry(row)
+    end
+
+    -- Perso appartenant au joueur (pour menus store)
+    if not personalAllowed() then return nil end
+    local owned = getOwnedPersonalRow(xPlayer.identifier, plate)
+    if not owned then return nil end
+
+    local props = decodeProps(owned[Config.Columns.vehicle] or owned.vehicle)
+    local model = props.model
+    if type(model) == 'string' then model = joaat(model) end
+    local storedRaw = owned[Config.Columns.stored]
+    return {
+        plate = owned[Config.Columns.plate] or owned.plate,
+        model = tonumber(model) or 0,
+        props = props,
+        stored = storedRaw == true or storedRaw == 1 or storedRaw == '1',
+        garage_id = owned[Config.Columns.garage],
+        engine = healthPercent(props.engineHealth, 1000.0),
+        body = healthPercent(props.bodyHealth, 1000.0),
+        fuel = fuelLevel(props),
+        isJob = false,
+        isPersonal = true,
+    }
 end)
 
-lib.callback.register('ox_garage:takeOutJob', function(source, jobName, garageId, plate)
+lib.callback.register('ox_garage:takeOutJob', function(source, jobName, garageId, plate, isPersonal)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer or xPlayer.job.name ~= jobName then
         return { ok = false, error = 'wrong_job' }
     end
 
     plate = normalizePlate(plate)
+    garageId = tostring(garageId or '')
+
+    -- Perso
+    if isPersonal or (personalAllowed() and not MySQL.single.await(
+        'SELECT 1 AS ok FROM ox_garage_job_vehicles WHERE REPLACE(UPPER(plate), " ", "") = ? AND job_name = ?',
+        { plate, jobName }
+    )) then
+        if not personalAllowed() then
+            return { ok = false, error = 'not_job_vehicle' }
+        end
+
+        local row = getOwnedPersonalRow(xPlayer.identifier, plate)
+        if not row then return { ok = false, error = 'not_yours' } end
+
+        local parking = row[Config.Columns.garage]
+        if Config.UseGarageColumn and garageId ~= '' and parking ~= garageId then
+            return { ok = false, error = 'not_stored' }
+        end
+
+        local storedRaw = row[Config.Columns.stored]
+        local isStored = storedRaw == true or storedRaw == 1 or storedRaw == '1'
+        if not isStored then return { ok = false, error = 'already_out' } end
+
+        MySQL.update.await(
+            ('UPDATE `%s` SET `%s` = 0 WHERE `%s` = ? AND REPLACE(UPPER(`%s`), " ", "") = ?'):format(
+                Config.Columns.table, Config.Columns.stored, Config.Columns.owner, Config.Columns.plate
+            ),
+            { xPlayer.identifier, plate }
+        )
+
+        local props = decodeProps(row[Config.Columns.vehicle] or row.vehicle)
+        props.plate = row[Config.Columns.plate] or props.plate
+
+        return {
+            ok = true,
+            props = props,
+            plate = row[Config.Columns.plate],
+            label = nil,
+            livery = props.livery or 0,
+            isPersonal = true,
+        }
+    end
+
     local row = MySQL.single.await(
         'SELECT * FROM ox_garage_job_vehicles WHERE REPLACE(UPPER(plate), " ", "") = ? AND job_name = ?',
         { plate, jobName }
@@ -320,6 +468,7 @@ lib.callback.register('ox_garage:takeOutJob', function(source, jobName, garageId
         plate = row.plate,
         label = row.label,
         livery = row.livery or 0,
+        isPersonal = false,
     }
 end)
 
@@ -329,11 +478,39 @@ RegisterNetEvent('ox_garage:registerJobSpawn', function(plate, netId)
     spawnedJobByPlate[normalizePlate(plate)] = netId
 end)
 
-RegisterNetEvent('ox_garage:forceStoreJob', function(plate)
+RegisterNetEvent('ox_garage:forceStoreJob', function(plate, garageId, isPersonal)
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not xPlayer or type(plate) ~= 'string' then return end
     plate = normalizePlate(plate)
+
+    if isPersonal or (personalAllowed() and not MySQL.single.await(
+        'SELECT 1 AS ok FROM ox_garage_job_vehicles WHERE REPLACE(UPPER(plate), " ", "") = ?',
+        { plate }
+    )) then
+        local tbl = Config.Columns.table
+        local ownerCol = Config.Columns.owner
+        local plateCol = Config.Columns.plate
+        local storedCol = Config.Columns.stored
+        local garageCol = Config.Columns.garage
+
+        if Config.UseGarageColumn and type(garageId) == 'string' and garageId ~= '' then
+            MySQL.update.await(
+                ('UPDATE `%s` SET `%s` = 1, `%s` = ? WHERE `%s` = ? AND REPLACE(UPPER(`%s`), " ", "") = ?'):format(
+                    tbl, storedCol, garageCol, ownerCol, plateCol
+                ),
+                { garageId, xPlayer.identifier, plate }
+            )
+        else
+            MySQL.update.await(
+                ('UPDATE `%s` SET `%s` = 1 WHERE `%s` = ? AND REPLACE(UPPER(`%s`), " ", "") = ?'):format(
+                    tbl, storedCol, ownerCol, plateCol
+                ),
+                { xPlayer.identifier, plate }
+            )
+        end
+        return
+    end
 
     MySQL.update.await(
         'UPDATE ox_garage_job_vehicles SET stored = 1 WHERE REPLACE(UPPER(plate), " ", "") = ? AND job_name = ?',
@@ -352,24 +529,63 @@ lib.callback.register('ox_garage:storeJob', function(source, jobName, garageId, 
     end
 
     local plate = normalizePlate(props.plate)
+    garageId = tostring(garageId or '')
+
     local row = MySQL.single.await(
         'SELECT * FROM ox_garage_job_vehicles WHERE REPLACE(UPPER(plate), " ", "") = ? AND job_name = ?',
         { plate, jobName }
     )
-    if not row then return { ok = false, error = 'not_job_vehicle' } end
 
-    props.plate = row.plate
+    if row then
+        props.plate = row.plate
+        local encoded = json.encode(props)
+        MySQL.update.await([[
+            UPDATE ox_garage_job_vehicles
+            SET stored = 1, props = ?, garage_id = CASE WHEN ? = '' THEN garage_id ELSE ? END
+            WHERE id = ?
+        ]], { encoded, garageId, garageId, row.id })
+
+        spawnedJobByPlate[plate] = nil
+        return { ok = true, plate = row.plate, label = row.label, netId = netId, isPersonal = false }
+    end
+
+    -- Ranger un véhicule perso ici
+    if not personalAllowed() then
+        return { ok = false, error = 'not_job_vehicle' }
+    end
+
+    local owned = getOwnedPersonalRow(xPlayer.identifier, plate)
+    if not owned then
+        return { ok = false, error = 'not_yours' }
+    end
+
+    if not Config.UseGarageColumn then
+        return { ok = false, error = 'error' }
+    end
+
+    props.plate = owned[Config.Columns.plate]
     local encoded = json.encode(props)
-    garageId = tostring(garageId or row.garage_id or '')
+    local parkingId = garageId ~= '' and garageId or ('job_' .. jobName)
 
-    MySQL.update.await([[
-        UPDATE ox_garage_job_vehicles
-        SET stored = 1, props = ?, garage_id = CASE WHEN ? = '' THEN garage_id ELSE ? END
-        WHERE id = ?
-    ]], { encoded, garageId, garageId, row.id })
+    MySQL.update.await(
+        ('UPDATE `%s` SET `%s` = 1, `%s` = ?, `%s` = ? WHERE `%s` = ? AND REPLACE(UPPER(`%s`), " ", "") = ?'):format(
+            Config.Columns.table,
+            Config.Columns.stored,
+            Config.Columns.garage,
+            Config.Columns.vehicle,
+            Config.Columns.owner,
+            Config.Columns.plate
+        ),
+        { parkingId, encoded, xPlayer.identifier, plate }
+    )
 
-    spawnedJobByPlate[plate] = nil
-    return { ok = true, plate = row.plate, label = row.label, netId = netId }
+    return {
+        ok = true,
+        plate = owned[Config.Columns.plate],
+        label = nil,
+        netId = netId,
+        isPersonal = true,
+    }
 end)
 
 print('^2[ox_garage]^0 module entreprise (job_creator) chargé.')

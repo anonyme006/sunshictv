@@ -100,7 +100,8 @@ local function registerJobGarage(garage)
                 label = L('target_store'),
                 distance = 2.5,
                 canInteract = function()
-                    local job = ESX.PlayerData and ESX.PlayerData.job
+                    local data = ESX.GetPlayerData and ESX.GetPlayerData() or ESX.PlayerData
+                    local job = data and data.job
                     if not job or job.name ~= garage.job then return false end
                     if (job.grade or 0) < (garage.min_grade or 0) then return false end
                     local veh = PlayerInOwnedVehicle()
@@ -112,11 +113,22 @@ local function registerJobGarage(garage)
                     if not veh then return end
                     local plate = GetVehicleNumberPlateText(veh)
                     local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
-                    if not jobVeh then
-                        Notify(L('job_not_job_vehicle'), 'error')
+                    if jobVeh then
+                        OpenJobStoreMenu(menuData, veh, jobVeh)
                         return
                     end
-                    OpenJobStoreMenu(menuData, veh, jobVeh)
+                    if Config.JobCreator and Config.JobCreator.allowPersonalVehicles ~= false then
+                        local personal = lib.callback.await('ox_garage:getVehicle', false, plate)
+                        if personal then
+                            OpenJobStoreMenu(menuData, veh, {
+                                plate = personal.plate,
+                                model = personal.model,
+                                isPersonal = true,
+                            })
+                            return
+                        end
+                    end
+                    Notify(L('job_not_job_vehicle'), 'error')
                 end,
             },
         },

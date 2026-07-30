@@ -19,8 +19,9 @@ end
 
 local function vehicleDescription(vehicle)
     local st = vehicle.stored and L('vehicle_stored') or L('vehicle_out')
-    return ('%s  ·  %s  ·  🔧 %s  ·  🛡 %s  ·  ⛽ %s'):format(
-        vehicle.plate or '—', st, bar(vehicle.engine), bar(vehicle.body), bar(vehicle.fuel)
+    local kind = vehicle.isPersonal and L('job_personal_tag') or L('job_fleet_tag')
+    return ('%s  ·  %s  ·  %s  ·  🔧 %s  ·  🛡 %s  ·  ⛽ %s'):format(
+        vehicle.plate or '—', kind, st, bar(vehicle.engine), bar(vehicle.body), bar(vehicle.fuel)
     )
 end
 
@@ -31,6 +32,10 @@ local function displayName(vehicle)
     return GetVehicleDisplayName(vehicle.model)
 end
 
+local function allowPersonal()
+    return Config.JobCreator and Config.JobCreator.allowPersonalVehicles ~= false
+end
+
 ---@param data table { job, garageId, label, spawns, store }
 function OpenJobGarageMenu(data)
     if not data or not data.job then return end
@@ -38,19 +43,33 @@ function OpenJobGarageMenu(data)
     local garageId = tostring(data.garageId or '')
     local title = data.label or L('job_menu_title', data.job)
 
-    -- Assis dans un véhicule job → menu ranger
+    -- Assis dans un véhicule → menu ranger (flotte OU perso)
     local veh = PlayerInOwnedVehicle()
     if veh and data.store then
         local coords = GetEntityCoords(veh)
         local storeCoords = data.store.coords
         local radius = data.store.radius or Config.StoreDistance
         if storeCoords and #(coords - storeCoords) <= radius then
-            -- Vérifie que c'est un véhicule flotte
             local plate = GetVehicleNumberPlateText(veh)
             local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
             if jobVeh then
                 OpenJobStoreMenu(data, veh, jobVeh)
                 return
+            end
+            if allowPersonal() then
+                local personal = lib.callback.await('ox_garage:getVehicle', false, plate)
+                if personal then
+                    OpenJobStoreMenu(data, veh, {
+                        plate = personal.plate,
+                        model = personal.model,
+                        isPersonal = true,
+                        stored = personal.stored,
+                        engine = personal.engine,
+                        body = personal.body,
+                        fuel = personal.fuel,
+                    })
+                    return
+                end
             end
         end
     end
@@ -75,7 +94,7 @@ function OpenJobGarageMenu(data)
                 icon = 'inbox',
                 iconColor = '#8b97a8',
                 disabled = true,
-                description = 'Ajoute des véhicules via /jobcreator → Véhicules',
+                description = allowPersonal() and L('job_empty_hint_personal') or L('job_empty_hint'),
             }},
         })
         lib.showContext(ctxId)
@@ -103,8 +122,18 @@ function OpenJobGarageMenu(data)
 end
 
 function OpenJobVehicleDetail(data, vehicle)
-    local fresh = lib.callback.await('ox_garage:getJobVehicle', false, vehicle.plate)
-    if fresh then vehicle = fresh end
+    local fresh
+    if vehicle.isPersonal then
+        fresh = lib.callback.await('ox_garage:getVehicle', false, vehicle.plate)
+        if fresh then
+            fresh.isPersonal = true
+            fresh.isJob = false
+            vehicle = fresh
+        end
+    else
+        fresh = lib.callback.await('ox_garage:getJobVehicle', false, vehicle.plate)
+        if fresh then vehicle = fresh end
+    end
 
     local name = displayName(vehicle)
     local ctxId = ('ox_garage_job_detail_%s'):format(normalizePlateLocal(vehicle.plate))
@@ -123,7 +152,7 @@ function OpenJobVehicleDetail(data, vehicle)
     if vehicle.stored then
         options[#options + 1] = {
             title = L('take_out'),
-            description = 'Sortir le véhicule de service',
+            description = vehicle.isPersonal and L('job_take_personal') or L('job_take_fleet'),
             icon = 'key',
             iconColor = Config.StatusColors.stored,
             onSelect = function()
@@ -226,7 +255,7 @@ function OpenJobStoreMenu(data, veh, jobVeh)
             },
             {
                 title = L('store_vehicle'),
-                description = 'Ranger dans le garage entreprise',
+                description = (jobVeh and jobVeh.isPersonal) and L('job_store_personal') or L('job_store_fleet'),
                 icon = 'square-parking',
                 iconColor = Config.StatusColors.stored,
                 onSelect = function()
@@ -248,24 +277,36 @@ function normalizePlateLocal(plate)
 end
 
 function TakeOutJobVehicle(data, vehicle)
-    local result = lib.callback.await('ox_garage:takeOutJob', false, data.job, data.garageId, vehicle.plate)
+    local isPersonal = vehicle.isPersonal == true
+    local result = lib.callback.await(
+        'ox_garage:takeOutJob',
+        false,
+        data.job,
+        data.garageId,
+        vehicle.plate,
+        isPersonal
+    )
     if not result or not result.ok then
         local map = {
             wrong_job = L('job_wrong_job'),
             grade = L('job_grade'),
             already_out = L('notify_already_out'),
             not_job_vehicle = L('job_not_job_vehicle'),
+            not_yours = L('notify_not_yours'),
+            not_stored = L('notify_not_stored'),
         }
         Notify(map[result and result.error] or L('notify_error'), 'error')
         return
     end
+
+    isPersonal = result.isPersonal == true or isPersonal
 
     local spawns = data.spawns or {}
     local spawn = FindFreeSpawn(spawns)
 
     if not spawn then
         if Config.CheckSpawnClear and #spawns > 0 then
-            TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
+            TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate, data.garageId, isPersonal)
             Notify(L('no_spawn'), 'error')
             return
         elseif #spawns > 0 then
@@ -289,7 +330,7 @@ function TakeOutJobVehicle(data, vehicle)
     })
 
     if not success then
-        TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
+        TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate, data.garageId, isPersonal)
         Notify(L('cancel'), 'inform')
         return
     end
@@ -301,7 +342,7 @@ function TakeOutJobVehicle(data, vehicle)
     lib.requestModel(model, 5000)
     local entity = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, false)
     if not entity or entity == 0 then
-        TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
+        TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate, data.garageId, isPersonal)
         Notify(L('notify_error'), 'error')
         return
     end
@@ -319,7 +360,11 @@ function TakeOutJobVehicle(data, vehicle)
 
     local netId = NetworkGetNetworkIdFromEntity(entity)
     SetNetworkIdCanMigrate(netId, true)
-    TriggerServerEvent('ox_garage:registerJobSpawn', vehicle.plate, netId)
+    if isPersonal then
+        TriggerServerEvent('ox_garage:registerSpawn', vehicle.plate, netId)
+    else
+        TriggerServerEvent('ox_garage:registerJobSpawn', vehicle.plate, netId)
+    end
     TaskWarpPedIntoVehicle(PlayerPedId(), entity, -1)
     SetModelAsNoLongerNeeded(model)
 
@@ -369,6 +414,7 @@ function StoreJobVehicle(data, veh)
         local map = {
             wrong_job = L('job_wrong_job'),
             not_job_vehicle = L('job_not_job_vehicle'),
+            not_yours = L('notify_not_yours'),
             too_far = L('notify_too_far'),
         }
         Notify(map[result and result.error] or L('notify_error'), 'error')
@@ -402,9 +448,20 @@ exports('OpenJobStore', function(data)
     end
     local plate = GetVehicleNumberPlateText(veh)
     local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
-    if not jobVeh then
-        Notify(L('job_not_job_vehicle'), 'error')
+    if jobVeh then
+        OpenJobStoreMenu(data, veh, jobVeh)
         return
     end
-    OpenJobStoreMenu(data, veh, jobVeh)
+    if allowPersonal() then
+        local personal = lib.callback.await('ox_garage:getVehicle', false, plate)
+        if personal then
+            OpenJobStoreMenu(data, veh, {
+                plate = personal.plate,
+                model = personal.model,
+                isPersonal = true,
+            })
+            return
+        end
+    end
+    Notify(L('job_not_job_vehicle'), 'error')
 end)
