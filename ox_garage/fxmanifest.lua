@@ -18,13 +18,16 @@ client_scripts {
     'client/main.lua',
     'client/menus.lua',
     'client/job.lua',
+    'client/job_garages.lua',
     'client/impound.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
+    'server/private.lua',
     'server/main.lua',
     'server/job.lua',
+    'server/job_garages.lua',
     'server/impound.lua',
 }
 

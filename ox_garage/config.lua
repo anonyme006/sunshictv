@@ -32,6 +32,9 @@ Config.FuelResource = 'none' -- 'ox_fuel' | 'LegacyFuel' | 'none'
 -- Spawn : vérifie qu'aucune collision n'occupe le point
 Config.CheckSpawnClear = true
 
+-- Compte pour acheter un garage privé / places
+Config.PrivatePayAccount = 'bank' -- 'bank' | 'money'
+
 --[[
     Intégration Job Creator (garages entreprise)
     Les markers "garage" / "garage_store" du job_creator ouvrent
@@ -39,23 +42,43 @@ Config.CheckSpawnClear = true
 ]]
 Config.JobCreator = {
     enabled = true,
-    -- Préfixe plaques flotte (ex: POL + 001 → POL001)
     platePrefixLen = 3,
-    -- Remettre stored=1 au restart serveur pour toute la flotte sortie
     resetOutOnRestart = false,
 }
 
 --[[
-    Liste des garages
-    target = zone ox_target (sphere / box)
-    spawns = points de sortie (vector4)
+    Garages entreprise créés via commande / export
+    /addjobgarage  — admin, à ta position
+    /deljobgarage [id]
+    /listjobgarages
+]]
+Config.JobGarages = {
+    -- Groupe ESX autorisé pour les commandes (en plus de ace)
+    adminGroups = { admin = true, superadmin = true, god = true },
+    -- Blip défaut des garages entreprise dynamiques
+    defaultBlip = { enabled = true, sprite = 357, color = 47, scale = 0.7 },
+    defaultStoreRadius = 10.0,
+    defaultTargetRadius = 2.2,
+    -- Offset des points de spawn générés devant le joueur
+    spawnForward = 4.0,
+    spawnSide = 3.0,
+}
+
+--[[
+    Garages personnels
+    kind = 'public'  → 1 seul garage gratuit (blip jaune)
+    kind = 'private' → payant selon la place (prix + places)
 ]]
 Config.Garages = {
+    -- ═══════════════════════════════════════════
+    -- GARAGE PUBLIC (gratuit) — blip jaune
+    -- ═══════════════════════════════════════════
     {
         id = 'legion',
-        label = 'Garage Legion Square',
+        kind = 'public',
+        label = 'Garage Public — Legion',
         type = 'car',
-        blip = { enabled = true, sprite = 357, color = 3, scale = 0.75 },
+        blip = { enabled = true, sprite = 357, color = 5, scale = 0.85 }, -- 5 = jaune
         coords = vec3(215.83, -810.14, 30.73),
         target = {
             coords = vec3(215.83, -810.14, 30.73),
@@ -72,11 +95,24 @@ Config.Garages = {
             vec4(225.45, -794.10, 30.58, 248.0),
         },
     },
+
+    -- ═══════════════════════════════════════════
+    -- GARAGES PRIVÉS (payants selon la place)
+    -- price        = accès + places incluses
+    -- pricePerSlot = place supplémentaire
+    -- slots        = places à l'achat
+    -- maxSlots     = plafond achetable
+    -- ═══════════════════════════════════════════
     {
         id = 'pinkcage',
-        label = 'Garage Pink Cage',
+        kind = 'private',
+        label = 'Garage Privé — Pink Cage',
         type = 'car',
-        blip = { enabled = true, sprite = 357, color = 3, scale = 0.75 },
+        price = 15000,
+        pricePerSlot = 5000,
+        slots = 1,
+        maxSlots = 4,
+        blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
         coords = vec3(273.0, -343.85, 44.92),
         target = {
             coords = vec3(273.0, -343.85, 44.92),
@@ -94,9 +130,14 @@ Config.Garages = {
     },
     {
         id = 'airport',
-        label = 'Garage Aéroport',
+        kind = 'private',
+        label = 'Garage Privé — Aéroport',
         type = 'car',
-        blip = { enabled = true, sprite = 357, color = 3, scale = 0.75 },
+        price = 35000,
+        pricePerSlot = 10000,
+        slots = 2,
+        maxSlots = 6,
+        blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
         coords = vec3(-1030.0, -2730.0, 20.1),
         target = {
             coords = vec3(-1030.0, -2730.0, 20.1),
@@ -112,42 +153,115 @@ Config.Garages = {
             vec4(-1020.2, -2731.5, 19.7, 240.0),
         },
     },
+    {
+        id = 'mirror',
+        kind = 'private',
+        label = 'Garage Privé — Mirror Park',
+        type = 'car',
+        price = 22000,
+        pricePerSlot = 7000,
+        slots = 1,
+        maxSlots = 5,
+        blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
+        coords = vec3(1036.25, -763.18, 57.99),
+        target = {
+            coords = vec3(1036.25, -763.18, 57.99),
+            radius = 2.0,
+            debug = false,
+        },
+        store = {
+            coords = vec3(1036.25, -763.18, 57.99),
+            radius = 8.0,
+        },
+        spawns = {
+            vec4(1029.70, -763.90, 57.90, 145.0),
+            vec4(1026.40, -761.20, 57.90, 145.0),
+        },
+    },
+    {
+        id = 'sandy',
+        kind = 'private',
+        label = 'Garage Privé — Sandy Shores',
+        type = 'car',
+        price = 12000,
+        pricePerSlot = 4000,
+        slots = 1,
+        maxSlots = 3,
+        blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
+        coords = vec3(1737.59, 3710.20, 34.14),
+        target = {
+            coords = vec3(1737.59, 3710.20, 34.14),
+            radius = 2.2,
+            debug = false,
+        },
+        store = {
+            coords = vec3(1737.59, 3710.20, 34.14),
+            radius = 10.0,
+        },
+        spawns = {
+            vec4(1732.80, 3714.50, 34.00, 20.0),
+            vec4(1728.50, 3716.10, 34.00, 20.0),
+        },
+    },
+    {
+        id = 'paleto',
+        kind = 'private',
+        label = 'Garage Privé — Paleto Bay',
+        type = 'car',
+        price = 18000,
+        pricePerSlot = 6000,
+        slots = 1,
+        maxSlots = 4,
+        blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
+        coords = vec3(107.87, 6613.27, 31.98),
+        target = {
+            coords = vec3(107.87, 6613.27, 31.98),
+            radius = 2.2,
+            debug = false,
+        },
+        store = {
+            coords = vec3(107.87, 6613.27, 31.98),
+            radius = 10.0,
+        },
+        spawns = {
+            vec4(114.20, 6608.50, 31.85, 225.0),
+            vec4(118.10, 6605.40, 31.85, 225.0),
+        },
+    },
 }
 
 -- Icônes FontAwesome selon la classe véhicule
 Config.ClassIcons = {
-    [0]  = 'car',           -- Compacts
-    [1]  = 'car',           -- Sedans
-    [2]  = 'car-side',      -- SUVs
-    [3]  = 'car',           -- Coupes
-    [4]  = 'car',           -- Muscle
-    [5]  = 'car',           -- Sports Classics
-    [6]  = 'gauge-high',    -- Sports
-    [7]  = 'rocket',        -- Super
-    [8]  = 'motorcycle',    -- Motorcycles
-    [9]  = 'truck-monster', -- Off-road
-    [10] = 'truck',         -- Industrial
-    [11] = 'truck',         -- Utility
-    [12] = 'van-shuttle',   -- Vans
-    [13] = 'bicycle',       -- Cycles
-    [14] = 'ship',          -- Boats
-    [15] = 'helicopter',    -- Helicopters
-    [16] = 'plane',         -- Planes
-    [17] = 'bus',           -- Service
-    [18] = 'truck-medical', -- Emergency
-    [19] = 'tank',          -- Military
-    [20] = 'truck',         -- Commercial
-    [21] = 'train',         -- Trains
+    [0]  = 'car',
+    [1]  = 'car',
+    [2]  = 'car-side',
+    [3]  = 'car',
+    [4]  = 'car',
+    [5]  = 'car',
+    [6]  = 'gauge-high',
+    [7]  = 'rocket',
+    [8]  = 'motorcycle',
+    [9]  = 'truck-monster',
+    [10] = 'truck',
+    [11] = 'truck',
+    [12] = 'van-shuttle',
+    [13] = 'bicycle',
+    [14] = 'ship',
+    [15] = 'helicopter',
+    [16] = 'plane',
+    [17] = 'bus',
+    [18] = 'truck-medical',
+    [19] = 'tank',
+    [20] = 'truck',
+    [21] = 'train',
 }
 
--- Couleurs statut (ox_lib iconColor)
 Config.StatusColors = {
-    stored  = '#3ecf8e', -- vert
-    out     = '#f07178', -- rouge
-    impound = '#e6b35a', -- orange / fourrière
+    stored  = '#3ecf8e',
+    out     = '#f07178',
+    impound = '#e6b35a',
 }
 
--- Labels affichés
 Config.StatusLabels = {
     stored  = 'Rangé',
     out     = 'Sorti',
@@ -156,13 +270,10 @@ Config.StatusLabels = {
 
 --[[--------------------------------------------------------------------------
     Fourrières
-    - public   : fourrière générale (police / ville) — le propriétaire récupère contre paiement
-    - mechanic : fourrière mécano — mise en fourrière par le job mechanic
 --------------------------------------------------------------------------]]
 Config.Impound = {
     enabled = true,
     progressDuration = 3500,
-    -- Compte pour payer : 'money' (cash) ou 'bank'
     payAccount = 'bank',
 }
 
@@ -170,15 +281,12 @@ Config.Impounds = {
     {
         id = 'impound_public',
         label = 'Fourrière Générale',
-        kind = 'public', -- public | mechanic
-        -- Jobs autorisés à METTRE un véhicule en fourrière
+        kind = 'public',
         jobs = { ['police'] = 0, ['sheriff'] = 0 },
-        -- Le propriétaire peut récupérer lui-même
         ownerCanRetrieve = true,
-        -- Jobs qui peuvent aussi sortir n'importe quel véhicule (ex: police)
         retrieveJobs = { ['police'] = 0 },
         price = 1500,
-        society = 'society_police', -- nil = argent disparu / caisse ville
+        society = 'society_police',
         blip = { enabled = true, sprite = 67, color = 1, scale = 0.75 },
         coords = vec3(409.32, -1622.94, 29.29),
         target = {
@@ -223,4 +331,3 @@ Config.Impounds = {
         },
     },
 }
-

@@ -1,12 +1,63 @@
 # ox_garage
 
-Garage moderne **ox_lib** + **ox_target** pour ESX — perso, entreprise, **fourrières**.
+Garage moderne **ox_lib** + **ox_target** pour ESX — public, privés payants, entreprise, fourrières.
 
-## Fonctionnalités
+## Garages
 
-- Garages personnels (menus ox_lib, états, spawn/store)
-- Garages entreprise (Job Creator)
-- **Fourrière Générale** (police) + **Fourrière Mécano**
+| Type | Blip | Accès |
+|------|------|--------|
+| **Public** (1) | Jaune | Gratuit — Legion |
+| **Privé** | Bleu | Achat d'accès + places (prix selon le lieu) |
+| **Entreprise** | Orange | Job requis — Job Creator ou `/addjobgarage` |
+
+### Garage privé
+
+1. Approche un garage privé → menu d'achat (`price` + places incluses)
+2. Range / sors tes véhicules (limité au nombre de places)
+3. Achète des places supplémentaires (`pricePerSlot`, plafond `maxSlots`)
+
+Config exemple :
+
+```lua
+{
+    id = 'mirror',
+    kind = 'private',
+    label = 'Garage Privé — Mirror Park',
+    price = 22000,        -- accès
+    pricePerSlot = 7000,  -- place en plus
+    slots = 1,            -- places à l'achat
+    maxSlots = 5,
+    blip = { enabled = true, sprite = 357, color = 3, scale = 0.7 },
+    -- coords / target / store / spawns ...
+}
+```
+
+### Garages entreprise (commande)
+
+Place-toi à l'emplacement voulu (admin) :
+
+```
+/addjobgarage          → formulaire job + label + grade + rayon
+/listjobgarages        → liste des IDs
+/deljobgarage [id]     → suppression
+```
+
+Export serveur :
+
+```lua
+exports.ox_garage:AddJobGarage({
+    job = 'police',
+    label = 'Garage LSPD',
+    x = 450.0, y = -980.0, z = 30.0,
+    heading = 90.0,
+    min_grade = 0,
+})
+
+exports.ox_garage:RemoveJobGarage('job_police_123456')
+exports.ox_garage:GetJobGarages()
+```
+
+Les véhicules de flotte restent gérés via Job Creator (`ox_garage_job_vehicles`).
 
 ## Fourrières
 
@@ -16,25 +67,11 @@ Garage moderne **ox_lib** + **ox_target** pour ESX — perso, entreprise, **four
 | Mise en fourrière | `police` / `sheriff` | `mechanic` |
 | Récupération | Propriétaire (payant) + police | Propriétaire (payant) + mécano (gratuit staff) |
 | Prix défaut | 1500$ | 800$ |
-| Société | `society_police` | `society_mechanic` |
-
-### Utilisation in-game
-
-1. Approche la zone ox_target de la fourrière
-2. **Ouvrir la fourrière** → liste des véhicules (plaque, états, tarif)
-3. Jobs autorisés : **Mettre en fourrière** (véhicule proche / actuel)
-4. Propriétaire : **Récupérer** → paiement bank/cash → spawn
-
-### Export
 
 ```lua
 exports.ox_garage:ImpoundVehicle(plate, 'impound_public', props)
 exports.ox_garage:OpenImpound('impound_mechanic')
 ```
-
-Config : `Config.Impounds` dans `config.lua` (coords, jobs, prix, society).
-
-Les véhicules en fourrière n’apparaissent **plus** dans les garages normaux (`parking` = id fourrière).
 
 ## Installation
 
@@ -45,5 +82,11 @@ ensure oxmysql
 ensure es_extended
 ensure ox_garage
 ```
+
+Tables créées auto au démarrage :
+
+- `ox_garage_private_access`
+- `ox_garage_job_garages`
+- `ox_garage_job_vehicles`
 
 Nécessite la colonne `parking` (ou `Config.Columns.garage`) sur `owned_vehicles`.
