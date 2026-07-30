@@ -42,10 +42,12 @@ Fichier `config.lua` :
 
 - `Config.StarterItems` — liste / noms des items (adapte-les à ton inventaire)
 - `Config.GiveOnlyOnce` — kit une seule fois par joueur
-- `Config.SpawnBmxVehicle` — spawne un vrai BMX à côté du joueur
+- `Config.SpawnBmxVehicle` — `true` pour spawner un BMX dès l'arrivée (sinon : utiliser l'item `bmx`)
 - `Config.ChanceCard.successRate` — ex. `0.75` = 75 % de chance de gagner
 - `Config.ChanceCard.wheel` — montants + poids (plus le poids est haut, plus le lot est fréquent)
 - `Config.ChanceCard.minReward` / `maxReward` — bornes affichées
+
+L'item **BMX** est utilisable : il spawn un vélo à côté du joueur et se consomme.
 
 ## Commande admin
 
