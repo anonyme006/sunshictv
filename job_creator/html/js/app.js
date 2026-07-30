@@ -718,6 +718,7 @@
   }
 
   $('#btnRefreshOxGaragesTab')?.addEventListener('click', () => post('adminGetOxGarages', {}));
+  $('#btnOpenGarageCreator')?.addEventListener('click', () => post('adminOpenGarageCreator', {}));
 
   function renderAll() {
     fillJobSelects();

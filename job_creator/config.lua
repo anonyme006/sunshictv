@@ -13,6 +13,9 @@ Config.AdminGroups = {
 Config.OpenCommand = 'jobcreator'
 Config.OpenKey = nil -- ex: 'F7' ou nil
 
+-- Créateur de garages ox_lib (menus context / inputDialog)
+Config.GarageCreatorCommand = 'jagarage'
+
 -- Distance d'interaction markers
 Config.MarkerDistance = 15.0
 Config.InteractDistance = 1.8

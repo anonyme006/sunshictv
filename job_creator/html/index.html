@@ -178,9 +178,12 @@
           <div class="card list-card">
             <div class="card__head">
               <h2>Garages ox_garage</h2>
-              <button id="btnRefreshOxGaragesTab" class="btn btn--soft btn--sm">Rafraîchir</button>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="btnOpenGarageCreator" class="btn btn--primary btn--sm">Créateur ox_lib</button>
+                <button id="btnRefreshOxGaragesTab" class="btn btn--soft btn--sm">Rafraîchir</button>
+              </div>
             </div>
-            <p class="muted" id="oxGarageStatus">Lie un garage dans Markers → type Garage / Ranger → champ « Garage ox_garage ».</p>
+            <p class="muted" id="oxGarageStatus">Lie un garage dans Markers, ou utilise <strong>/jagarage</strong> (menus ox_lib).</p>
             <div id="oxGaragesList" class="list"></div>
           </div>
         </section>

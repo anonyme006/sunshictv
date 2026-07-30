@@ -9,6 +9,7 @@ version '1.0.1'
 
 shared_scripts {
     '@es_extended/imports.lua',
+    '@ox_lib/init.lua',
     'config.lua',
     'locales/fr.lua',
 }
@@ -21,6 +22,7 @@ client_scripts {
     'client/cloakroom.lua',
     'client/boss.lua',
     'client/creator.lua',
+    'client/garage_creator.lua',
 }
 
 server_scripts {
@@ -31,6 +33,7 @@ server_scripts {
     'server/society.lua',
     'server/employees.lua',
     'server/actions.lua',
+    'server/garage_creator.lua',
 }
 
 ui_page 'html/index.html'
@@ -44,8 +47,8 @@ files {
 dependencies {
     'es_extended',
     'oxmysql',
+    'ox_lib',
 }
 
 -- Optionnel mais recommandé pour les garages entreprise
 -- dependency / ox_garage
--- dependency / ox_lib

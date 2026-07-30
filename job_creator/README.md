@@ -46,11 +46,28 @@ ensure job_creator
 1. `/jobcreator` (admin)
 2. Crée un job (ex: `mechanic` / Mécano)
 3. Ajoute des grades + permissions
-4. Place-toi au bon endroit → **Markers** → « Position joueur » → type (boss, garage…)
-5. Onglet **ox_garage** : vois les garages dispo → « Utiliser dans marker »
-6. Pour un garage flotte : ajoute des véhicules liés au job
-7. Active les actions F6 dans l’onglet Job
-8. Attribue le job via **Outils** ou menu patron
+4. **Créateur garages ox_lib** : `/jagarage` (même thème que ox_garage)
+5. Ou panneau NUI → **Markers** → « Position joueur » → type (boss, garage…)
+6. Onglet **ox_garage** : vois les garages dispo → « Utiliser dans marker »
+7. Pour un garage flotte : ajoute des véhicules liés au job
+8. Active les actions F6 dans l’onglet Job
+9. Attribue le job via **Outils** ou menu patron
+
+## Créateur de garages (`/jagarage`)
+
+Menus **ox_lib** (context + inputDialog) pour rester dans le thème ox_garage :
+
+| Option | Effet |
+|--------|--------|
+| **Garage flotte** | `AddJobGarage` + markers `garage` / `garage_store` à ta position |
+| **Lier garage perso/public** | Marker qui ouvre un garage ox_garage existant |
+| **Point ranger** | Marker `garage_store` seul |
+| **Véhicule flotte** | Ajoute un modèle dans `jc_vehicles` (+ sync ox_garage) |
+| **Listes** | Markers garage + garages ox_garage |
+
+```lua
+Config.GarageCreatorCommand = 'jagarage'
+```
 
 ## ox_garage dans le panel
 
@@ -82,6 +99,7 @@ ensure job_creator
 
 ```lua
 Config.OpenCommand = 'jobcreator'
+Config.GarageCreatorCommand = 'jagarage'
 Config.AdminGroups = { ['admin'] = true, ['superadmin'] = true }
 Config.Inventory = 'esx' -- ou 'ox'
 Config.UseAddonAccount = true
@@ -95,8 +113,8 @@ Config.Webhook = '' -- logs Discord
 job_creator/
   config.lua
   fxmanifest.lua
-  client/   (markers, menus, garage, cloakroom, boss, creator)
-  server/   (jobs, markers, society, employees, actions)
+  client/   (markers, menus, garage, garage_creator, cloakroom, boss, creator)
+  server/   (jobs, markers, society, employees, actions, garage_creator)
   html/     (panneau admin + menus joueur)
   sql/install.sql
   locales/fr.lua

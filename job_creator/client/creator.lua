@@ -138,6 +138,18 @@ RegisterNUICallback('adminReload', function(_, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('adminOpenGarageCreator', function(_, cb)
+    JC_C.AdminOpen = false
+    SetNuiFocus(false, false)
+    SendNUIMessage({ action = 'closeAdmin' })
+    SetTimeout(150, function()
+        if JC_C.OpenGarageCreator then
+            JC_C.OpenGarageCreator()
+        end
+    end)
+    cb({ ok = true })
+end)
+
 -- ESC
 CreateThread(function()
     while true do
