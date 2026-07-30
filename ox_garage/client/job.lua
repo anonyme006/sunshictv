@@ -9,16 +9,16 @@ end
 
 local function statusMeta(vehicle)
     return {
-        { label = _('plate'), value = vehicle.plate },
-        { label = _('status'), value = vehicle.stored and _('vehicle_stored') or _('vehicle_out') },
-        { label = _('engine'), value = bar(vehicle.engine), progress = vehicle.engine },
-        { label = _('body'), value = bar(vehicle.body), progress = vehicle.body },
-        { label = _('fuel'), value = bar(vehicle.fuel), progress = vehicle.fuel },
+        { label = L('plate'), value = vehicle.plate },
+        { label = L('status'), value = vehicle.stored and L('vehicle_stored') or L('vehicle_out') },
+        { label = L('engine'), value = bar(vehicle.engine), progress = vehicle.engine },
+        { label = L('body'), value = bar(vehicle.body), progress = vehicle.body },
+        { label = L('fuel'), value = bar(vehicle.fuel), progress = vehicle.fuel },
     }
 end
 
 local function vehicleDescription(vehicle)
-    local st = vehicle.stored and _('vehicle_stored') or _('vehicle_out')
+    local st = vehicle.stored and L('vehicle_stored') or L('vehicle_out')
     return ('%s  ·  %s  ·  🔧 %s  ·  🛡 %s  ·  ⛽ %s'):format(
         vehicle.plate or '—', st, bar(vehicle.engine), bar(vehicle.body), bar(vehicle.fuel)
     )
@@ -36,7 +36,7 @@ function OpenJobGarageMenu(data)
     if not data or not data.job then return end
 
     local garageId = tostring(data.garageId or '')
-    local title = data.label or _('job_menu_title', data.job)
+    local title = data.label or L('job_menu_title', data.job)
 
     -- Assis dans un véhicule job → menu ranger
     local veh = PlayerInOwnedVehicle()
@@ -58,8 +58,8 @@ function OpenJobGarageMenu(data)
     local result = lib.callback.await('ox_garage:getJobVehicles', false, data.job, garageId)
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'wrong_job' then Notify(_('job_wrong_job'), 'error')
-        else Notify(_('notify_error'), 'error') end
+        if err == 'wrong_job' then Notify(L('job_wrong_job'), 'error')
+        else Notify(L('notify_error'), 'error') end
         return
     end
 
@@ -71,7 +71,7 @@ function OpenJobGarageMenu(data)
             id = ctxId,
             title = title,
             options = {{
-                title = _('menu_empty'),
+                title = L('menu_empty'),
                 icon = 'inbox',
                 iconColor = '#8b97a8',
                 disabled = true,
@@ -83,7 +83,7 @@ function OpenJobGarageMenu(data)
     end
 
     local options = {}
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         local name = displayName(v)
         options[#options + 1] = {
             title = name,
@@ -122,7 +122,7 @@ function OpenJobVehicleDetail(data, vehicle)
 
     if vehicle.stored then
         options[#options + 1] = {
-            title = _('take_out'),
+            title = L('take_out'),
             description = 'Sortir le véhicule de service',
             icon = 'key',
             iconColor = Config.StatusColors.stored,
@@ -132,7 +132,7 @@ function OpenJobVehicleDetail(data, vehicle)
         }
     else
         options[#options + 1] = {
-            title = _('already_out'),
+            title = L('already_out'),
             description = 'Ce véhicule est déjà dehors',
             icon = 'ban',
             iconColor = Config.StatusColors.out,
@@ -141,7 +141,7 @@ function OpenJobVehicleDetail(data, vehicle)
     end
 
     options[#options + 1] = {
-        title = _('view_info'),
+        title = L('view_info'),
         icon = 'circle-info',
         onSelect = function()
             OpenJobVehicleInfo(data, vehicle)
@@ -149,7 +149,7 @@ function OpenJobVehicleDetail(data, vehicle)
     }
 
     options[#options + 1] = {
-        title = _('back'),
+        title = L('back'),
         icon = 'arrow-left',
         onSelect = function()
             OpenJobGarageMenu(data)
@@ -169,32 +169,32 @@ function OpenJobVehicleInfo(data, vehicle)
     local name = displayName(vehicle)
     lib.registerContext({
         id = 'ox_garage_job_info',
-        title = _('info_title', name),
+        title = L('info_title', name),
         options = {
-            { title = _('plate'), description = vehicle.plate, icon = 'id-card' },
+            { title = L('plate'), description = vehicle.plate, icon = 'id-card' },
             {
-                title = _('status'),
-                description = vehicle.stored and _('vehicle_stored') or _('vehicle_out'),
+                title = L('status'),
+                description = vehicle.stored and L('vehicle_stored') or L('vehicle_out'),
                 icon = vehicle.stored and 'warehouse' or 'road',
                 iconColor = vehicle.stored and Config.StatusColors.stored or Config.StatusColors.out,
             },
             {
-                title = _('engine'), description = bar(vehicle.engine), icon = 'engine',
+                title = L('engine'), description = bar(vehicle.engine), icon = 'engine',
                 progress = vehicle.engine,
                 colorScheme = vehicle.engine > 50 and 'green' or (vehicle.engine > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('body'), description = bar(vehicle.body), icon = 'car-burst',
+                title = L('body'), description = bar(vehicle.body), icon = 'car-burst',
                 progress = vehicle.body,
                 colorScheme = vehicle.body > 50 and 'green' or (vehicle.body > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('fuel'), description = bar(vehicle.fuel), icon = 'gas-pump',
+                title = L('fuel'), description = bar(vehicle.fuel), icon = 'gas-pump',
                 progress = vehicle.fuel,
                 colorScheme = vehicle.fuel > 50 and 'green' or (vehicle.fuel > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('back'), icon = 'arrow-left',
+                title = L('back'), icon = 'arrow-left',
                 onSelect = function() OpenJobVehicleDetail(data, vehicle) end,
             },
         },
@@ -211,7 +211,7 @@ function OpenJobStoreMenu(data, veh, jobVeh)
 
     lib.registerContext({
         id = 'ox_garage_job_store',
-        title = _('store_menu_title'),
+        title = L('store_menu_title'),
         options = {
             {
                 title = name,
@@ -225,7 +225,7 @@ function OpenJobStoreMenu(data, veh, jobVeh)
                 iconColor = Config.StatusColors.out,
             },
             {
-                title = _('store_vehicle'),
+                title = L('store_vehicle'),
                 description = 'Ranger dans le garage entreprise',
                 icon = 'square-parking',
                 iconColor = Config.StatusColors.stored,
@@ -234,7 +234,7 @@ function OpenJobStoreMenu(data, veh, jobVeh)
                 end,
             },
             {
-                title = _('cancel'),
+                title = L('cancel'),
                 icon = 'xmark',
                 onSelect = function() end,
             },
@@ -251,12 +251,12 @@ function TakeOutJobVehicle(data, vehicle)
     local result = lib.callback.await('ox_garage:takeOutJob', false, data.job, data.garageId, vehicle.plate)
     if not result or not result.ok then
         local map = {
-            wrong_job = _('job_wrong_job'),
-            grade = _('job_grade'),
-            already_out = _('notify_already_out'),
-            not_job_vehicle = _('job_not_job_vehicle'),
+            wrong_job = L('job_wrong_job'),
+            grade = L('job_grade'),
+            already_out = L('notify_already_out'),
+            not_job_vehicle = L('job_not_job_vehicle'),
         }
-        Notify(map[result and result.error] or _('notify_error'), 'error')
+        Notify(map[result and result.error] or L('notify_error'), 'error')
         return
     end
 
@@ -266,7 +266,7 @@ function TakeOutJobVehicle(data, vehicle)
     if not spawn then
         if Config.CheckSpawnClear and #spawns > 0 then
             TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
-            Notify(_('no_spawn'), 'error')
+            Notify(L('no_spawn'), 'error')
             return
         elseif #spawns > 0 then
             spawn = spawns[1]
@@ -280,7 +280,7 @@ function TakeOutJobVehicle(data, vehicle)
 
     local success = lib.progressCircle({
         duration = Config.ProgressSpawn,
-        label = _('progress_spawn'),
+        label = L('progress_spawn'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
@@ -290,7 +290,7 @@ function TakeOutJobVehicle(data, vehicle)
 
     if not success then
         TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
-        Notify(_('cancel'), 'inform')
+        Notify(L('cancel'), 'inform')
         return
     end
 
@@ -302,7 +302,7 @@ function TakeOutJobVehicle(data, vehicle)
     local entity = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, false)
     if not entity or entity == 0 then
         TriggerServerEvent('ox_garage:forceStoreJob', vehicle.plate)
-        Notify(_('notify_error'), 'error')
+        Notify(L('notify_error'), 'error')
         return
     end
 
@@ -323,26 +323,26 @@ function TakeOutJobVehicle(data, vehicle)
     TaskWarpPedIntoVehicle(PlayerPedId(), entity, -1)
     SetModelAsNoLongerNeeded(model)
 
-    Notify(_('notify_spawned', result.label or displayName(vehicle)), 'success')
+    Notify(L('notify_spawned', result.label or displayName(vehicle)), 'success')
 end
 
 function StoreJobVehicle(data, veh)
     if not veh or not DoesEntityExist(veh) then
-        Notify(_('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_not_in_vehicle'), 'error')
         return
     end
 
     if data.store and data.store.coords then
         local radius = data.store.radius or Config.StoreDistance
         if #(GetEntityCoords(veh) - data.store.coords) > radius then
-            Notify(_('notify_too_far'), 'error')
+            Notify(L('notify_too_far'), 'error')
             return
         end
     end
 
     local success = lib.progressCircle({
         duration = Config.ProgressStore,
-        label = _('progress_store'),
+        label = L('progress_store'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
@@ -351,12 +351,12 @@ function StoreJobVehicle(data, veh)
     })
 
     if not success then
-        Notify(_('cancel'), 'inform')
+        Notify(L('cancel'), 'inform')
         return
     end
 
     if not DoesEntityExist(veh) then
-        Notify(_('notify_error'), 'error')
+        Notify(L('notify_error'), 'error')
         return
     end
 
@@ -367,11 +367,11 @@ function StoreJobVehicle(data, veh)
     local result = lib.callback.await('ox_garage:storeJob', false, data.job, data.garageId, netId, props)
     if not result or not result.ok then
         local map = {
-            wrong_job = _('job_wrong_job'),
-            not_job_vehicle = _('job_not_job_vehicle'),
-            too_far = _('notify_too_far'),
+            wrong_job = L('job_wrong_job'),
+            not_job_vehicle = L('job_not_job_vehicle'),
+            too_far = L('notify_too_far'),
         }
-        Notify(map[result and result.error] or _('notify_error'), 'error')
+        Notify(map[result and result.error] or L('notify_error'), 'error')
         return
     end
 
@@ -382,7 +382,7 @@ function StoreJobVehicle(data, veh)
         DeleteVehicle(veh)
     end
 
-    Notify(_('notify_stored', result.label or name), 'success')
+    Notify(L('notify_stored', result.label or name), 'success')
 end
 
 --- Exports pour job_creator
@@ -397,13 +397,13 @@ end)
 exports('OpenJobStore', function(data)
     local veh = PlayerInOwnedVehicle()
     if not veh then
-        Notify(_('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_not_in_vehicle'), 'error')
         return
     end
     local plate = GetVehicleNumberPlateText(veh)
     local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
     if not jobVeh then
-        Notify(_('job_not_job_vehicle'), 'error')
+        Notify(L('job_not_job_vehicle'), 'error')
         return
     end
     OpenJobStoreMenu(data, veh, jobVeh)

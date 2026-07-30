@@ -1,6 +1,6 @@
 local blips = {}
 
-function _(key, ...)
+function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then
         return str:format(...)
@@ -19,7 +19,7 @@ function Notify(desc, nType)
 end
 
 function GetGarageById(id)
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == id then return g end
     end
 end
@@ -58,7 +58,7 @@ end
 function IsSpawnPointClear(coords, radius)
     radius = radius or 2.5
     local vehicles = GetGamePool('CVehicle')
-    for _, veh in ipairs(vehicles) do
+    for _i, veh in ipairs(vehicles) do
         if #(GetEntityCoords(veh) - vec3(coords.x, coords.y, coords.z)) < radius then
             return false
         end
@@ -67,7 +67,7 @@ function IsSpawnPointClear(coords, radius)
 end
 
 function FindFreeSpawn(spawns)
-    for _, s in ipairs(spawns or {}) do
+    for _i, s in ipairs(spawns or {}) do
         if IsSpawnPointClear(s, 2.8) then
             return s
         end
@@ -128,7 +128,7 @@ end
 
 --- Blips + ox_target
 CreateThread(function()
-    for _, garage in ipairs(Config.Garages) do
+    for _i, garage in ipairs(Config.Garages) do
         if garage.blip and garage.blip.enabled then
             local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
             SetBlipSprite(blip, garage.blip.sprite or 357)
@@ -151,7 +151,7 @@ CreateThread(function()
                 {
                     name = 'ox_garage_open_' .. garage.id,
                     icon = 'fa-solid fa-warehouse',
-                    label = _('target_open'),
+                    label = L('target_open'),
                     distance = 2.0,
                     onSelect = function()
                         OpenGarageMenu(garage.id)
@@ -160,7 +160,7 @@ CreateThread(function()
                 {
                     name = 'ox_garage_store_' .. garage.id,
                     icon = 'fa-solid fa-square-parking',
-                    label = _('target_store'),
+                    label = L('target_store'),
                     distance = 2.5,
                     canInteract = function()
                         return PlayerInOwnedVehicle() ~= nil and IsNearGarageStore(garage)

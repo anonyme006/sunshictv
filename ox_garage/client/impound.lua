@@ -3,7 +3,7 @@
 ]]
 
 local function GetImpoundById(id)
-    for _, imp in ipairs(Config.Impounds or {}) do
+    for _i, imp in ipairs(Config.Impounds or {}) do
         if imp.id == id then return imp end
     end
 end
@@ -34,7 +34,7 @@ end
 
 function OpenImpoundMenu(impoundId)
     if not Config.Impound or not Config.Impound.enabled then
-        return Notify(_('notify_impound_disabled'), 'error')
+        return Notify(L('notify_impound_disabled'), 'error')
     end
 
     local impound = GetImpoundById(impoundId)
@@ -46,9 +46,9 @@ function OpenImpoundMenu(impoundId)
     if #vehicles == 0 then
         lib.registerContext({
             id = 'ox_garage_impound_' .. impoundId,
-            title = _('impound_menu_title', impound.label),
+            title = L('impound_menu_title', impound.label),
             options = {{
-                title = _('impound_empty'),
+                title = L('impound_empty'),
                 icon = 'inbox',
                 iconColor = '#8b97a8',
                 disabled = true,
@@ -59,7 +59,7 @@ function OpenImpoundMenu(impoundId)
     end
 
     local options = {}
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         local name = GetVehicleDisplayName(v.model)
         options[#options + 1] = {
             title = name,
@@ -69,11 +69,11 @@ function OpenImpoundMenu(impoundId)
             icon = GetVehicleIcon(v.model),
             iconColor = Config.StatusColors.impound or '#e6b35a',
             metadata = {
-                { label = _('plate'), value = v.plate },
-                { label = _('status'), value = Config.StatusLabels.impound or 'Fourrière' },
-                { label = _('engine'), value = (v.engine or 0) .. ' %', progress = v.engine },
-                { label = _('body'), value = (v.body or 0) .. ' %', progress = v.body },
-                { label = _('fuel'), value = (v.fuel or 0) .. ' %', progress = v.fuel },
+                { label = L('plate'), value = v.plate },
+                { label = L('status'), value = Config.StatusLabels.impound or 'Fourrière' },
+                { label = L('engine'), value = (v.engine or 0) .. ' %', progress = v.engine },
+                { label = L('body'), value = (v.body or 0) .. ' %', progress = v.body },
+                { label = L('fuel'), value = (v.fuel or 0) .. ' %', progress = v.fuel },
                 { label = 'Tarif', value = formatPrice(price) .. ' $' },
             },
             arrow = true,
@@ -86,7 +86,7 @@ function OpenImpoundMenu(impoundId)
     -- Option saisie si job autorisé + véhicule proche
     if canSeize(impound) then
         table.insert(options, 1, {
-            title = _('target_impound_seize'),
+            title = L('target_impound_seize'),
             description = 'Mettre le véhicule proche / actuel en fourrière',
             icon = 'truck-ramp-box',
             iconColor = Config.StatusColors.impound,
@@ -98,7 +98,7 @@ function OpenImpoundMenu(impoundId)
 
     lib.registerContext({
         id = 'ox_garage_impound_' .. impoundId,
-        title = _('impound_menu_title', impound.label),
+        title = L('impound_menu_title', impound.label),
         options = options,
     })
     lib.showContext('ox_garage_impound_' .. impoundId)
@@ -111,12 +111,12 @@ function OpenImpoundDetail(impoundId, vehicle)
     local name = GetVehicleDisplayName(vehicle.model)
     local price = tonumber(impound.price) or 0
     local asStaff = jobAllowed(impound.retrieveJobs)
-    local retrieveLabel = (asStaff and price > 0) and _('impound_retrieve_free')
-        or _('impound_retrieve', formatPrice(price))
+    local retrieveLabel = (asStaff and price > 0) and L('impound_retrieve_free')
+        or L('impound_retrieve', formatPrice(price))
 
     -- Staff sortant un véhicule d'autrui : gratuit côté UI
     if asStaff then
-        retrieveLabel = _('impound_retrieve_free')
+        retrieveLabel = L('impound_retrieve_free')
     end
 
     lib.registerContext({
@@ -140,7 +140,7 @@ function OpenImpoundDetail(impoundId, vehicle)
                 end,
             },
             {
-                title = _('back'),
+                title = L('back'),
                 icon = 'arrow-left',
                 onSelect = function()
                     OpenImpoundMenu(impoundId)
@@ -154,7 +154,7 @@ end
 function SeizeNearbyVehicle(impoundId)
     local impound = GetImpoundById(impoundId)
     if not impound or not canSeize(impound) then
-        return Notify(_('notify_impound_job'), 'error')
+        return Notify(L('notify_impound_job'), 'error')
     end
 
     local ped = PlayerPedId()
@@ -162,7 +162,7 @@ function SeizeNearbyVehicle(impoundId)
     if veh == 0 then
         local coords = GetEntityCoords(ped)
         local closest, dist = 0, 6.0
-        for _, v in ipairs(GetGamePool('CVehicle')) do
+        for _i, v in ipairs(GetGamePool('CVehicle')) do
             local d = #(coords - GetEntityCoords(v))
             if d < dist then
                 dist = d
@@ -173,36 +173,36 @@ function SeizeNearbyVehicle(impoundId)
     end
 
     if not veh or veh == 0 then
-        return Notify(_('notify_error'), 'error')
+        return Notify(L('notify_error'), 'error')
     end
 
     local store = impound.store or { coords = impound.coords, radius = 12.0 }
     if #(GetEntityCoords(veh) - store.coords) > (store.radius or 12.0) then
-        return Notify(_('notify_too_far'), 'error')
+        return Notify(L('notify_too_far'), 'error')
     end
 
     local ok = lib.progressCircle({
         duration = Config.Impound.progressDuration or 3500,
-        label = _('impound_progress'),
+        label = L('impound_progress'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
         disable = { move = true, car = true, combat = true },
         anim = { dict = 'mini@repair', clip = 'fixing_a_ped' },
     })
-    if not ok then return Notify(_('cancel'), 'inform') end
+    if not ok then return Notify(L('cancel'), 'inform') end
 
-    if not DoesEntityExist(veh) then return Notify(_('notify_error'), 'error') end
+    if not DoesEntityExist(veh) then return Notify(L('notify_error'), 'error') end
 
     local props = GetVehicleProps(veh)
     local result = lib.callback.await('ox_garage:impoundVehicle', false, impoundId, props)
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'job' then Notify(_('notify_impound_job'), 'error')
-        elseif err == 'already' then Notify(_('notify_already_impound'), 'error')
-        elseif err == 'too_far' then Notify(_('notify_too_far'), 'error')
+        if err == 'job' then Notify(L('notify_impound_job'), 'error')
+        elseif err == 'already' then Notify(L('notify_already_impound'), 'error')
+        elseif err == 'too_far' then Notify(L('notify_too_far'), 'error')
         elseif err == 'not_yours' then Notify('Véhicule non enregistré (owned_vehicles)', 'error')
-        else Notify(_('notify_error'), 'error') end
+        else Notify(L('notify_error'), 'error') end
         return
     end
 
@@ -213,7 +213,7 @@ function SeizeNearbyVehicle(impoundId)
         DeleteVehicle(veh)
     end
 
-    Notify(_('notify_impounded', result.plate or props.plate or ''), 'success')
+    Notify(L('notify_impounded', result.plate or props.plate or ''), 'success')
 end
 
 function RetrieveImpoundVehicle(impoundId, vehicle)
@@ -222,29 +222,29 @@ function RetrieveImpoundVehicle(impoundId, vehicle)
 
     local ok = lib.progressCircle({
         duration = Config.ProgressSpawn or 2500,
-        label = _('impound_retrieve_progress'),
+        label = L('impound_retrieve_progress'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
         disable = { move = true, car = true, combat = true },
         anim = { dict = 'anim@heists@keycard@', clip = 'exit' },
     })
-    if not ok then return Notify(_('cancel'), 'inform') end
+    if not ok then return Notify(L('cancel'), 'inform') end
 
     local result = lib.callback.await('ox_garage:retrieveImpound', false, impoundId, vehicle.plate)
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'money' then Notify(_('notify_no_money'), 'error')
-        elseif err == 'job' then Notify(_('notify_impound_job'), 'error')
-        elseif err == 'not_impound' then Notify(_('notify_not_impound'), 'error')
-        else Notify(_('notify_error'), 'error') end
+        if err == 'money' then Notify(L('notify_no_money'), 'error')
+        elseif err == 'job' then Notify(L('notify_impound_job'), 'error')
+        elseif err == 'not_impound' then Notify(L('notify_not_impound'), 'error')
+        else Notify(L('notify_error'), 'error') end
         return
     end
 
     local spawn = FindFreeSpawn(result.spawns or impound.spawns)
     if not spawn then
         TriggerServerEvent('ox_garage:forceStore', vehicle.plate, impoundId)
-        Notify(_('no_spawn'), 'error')
+        Notify(L('no_spawn'), 'error')
         return
     end
 
@@ -256,7 +256,7 @@ function RetrieveImpoundVehicle(impoundId, vehicle)
     local entity = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, false)
     if not entity or entity == 0 then
         TriggerServerEvent('ox_garage:forceStore', vehicle.plate, impoundId)
-        Notify(_('notify_error'), 'error')
+        Notify(L('notify_error'), 'error')
         return
     end
 
@@ -275,9 +275,9 @@ function RetrieveImpoundVehicle(impoundId, vehicle)
 
     local price = result.price or 0
     if price > 0 then
-        Notify(_('notify_retrieved', GetVehicleDisplayName(model), formatPrice(price)), 'success')
+        Notify(L('notify_retrieved', GetVehicleDisplayName(model), formatPrice(price)), 'success')
     else
-        Notify(_('notify_retrieved_free', GetVehicleDisplayName(model)), 'success')
+        Notify(L('notify_retrieved_free', GetVehicleDisplayName(model)), 'success')
     end
 end
 
@@ -285,7 +285,7 @@ end
 CreateThread(function()
     if not Config.Impound or not Config.Impound.enabled then return end
 
-    for _, impound in ipairs(Config.Impounds or {}) do
+    for _i, impound in ipairs(Config.Impounds or {}) do
         if impound.blip and impound.blip.enabled then
             local blip = AddBlipForCoord(impound.coords.x, impound.coords.y, impound.coords.z)
             SetBlipSprite(blip, impound.blip.sprite or 67)
@@ -307,7 +307,7 @@ CreateThread(function()
                 {
                     name = 'ox_garage_impound_open_' .. impound.id,
                     icon = 'fa-solid fa-building-shield',
-                    label = _('target_impound_open'),
+                    label = L('target_impound_open'),
                     distance = 2.2,
                     onSelect = function()
                         OpenImpoundMenu(impound.id)
@@ -316,7 +316,7 @@ CreateThread(function()
                 {
                     name = 'ox_garage_impound_seize_' .. impound.id,
                     icon = 'fa-solid fa-truck-ramp-box',
-                    label = _('target_impound_seize'),
+                    label = L('target_impound_seize'),
                     distance = 2.5,
                     canInteract = function()
                         return canSeize(impound)
