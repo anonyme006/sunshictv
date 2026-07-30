@@ -46,6 +46,53 @@ Config.BmxTarget = {
 Config.Inventory = 'esx'
 
 --[[
+    Véhicule aléatoire ajouté directement au garage (owned_vehicles).
+    Compatible ox_garage (colonne parking = id du garage, ex. legion).
+]]
+Config.GarageVehicle = {
+    enabled = true,
+    -- Aussi donner un véhicule via /givekit
+    giveOnAdminKit = true,
+
+    -- Table / colonnes (même schéma qu'ox_garage)
+    table = 'owned_vehicles',
+    columns = {
+        owner = 'owner',
+        plate = 'plate',
+        vehicle = 'vehicle',
+        stored = 'stored',
+        parking = 'parking', -- mets false si ta table n'a pas cette colonne
+        type = 'type',
+    },
+
+    -- ID garage ox_garage (Config.Garages[].id) où le véhicule apparaît rangé
+    garageId = 'legion',
+    vehicleType = 'car',
+    stored = 1,
+
+    -- Pool de modèles (spawn name GTA) — un tiré au hasard
+    models = {
+        'asbo',
+        'blista',
+        'panto',
+        'issi2',
+        'club',
+        'kanjo',
+        'dilettante',
+        'prairie',
+        'rhapsody',
+        'brioso',
+        'emperor',
+        'asea',
+        'premier',
+        'ingot',
+    },
+
+    -- Préfixe plaque (ex: ST + 6 chars) — max ~8 caractères GTA
+    platePrefix = 'ST',
+}
+
+--[[
     Carte Chance — spin NUI
     Une seule utilisation : la carte est retirée après le tirage.
 ]]
@@ -82,6 +129,8 @@ Config.ChanceCard = {
 Config.Locale = {
     kit_received = 'Tu as reçu ton kit d\'arrivée !',
     already_received = 'Tu as déjà reçu ton kit d\'arrivée.',
+    vehicle_received = 'Un véhicule (%s — %s) a été ajouté à ton garage.',
+    vehicle_failed = 'Impossible d\'ajouter le véhicule starter au garage.',
     spin_success = 'Félicitations ! %s$ ont été versés sur ton compte bancaire.',
     spin_fail = 'Pas de chance… La carte n\'a rien donné cette fois.',
     no_card = 'Tu n\'as pas de Carte Chance.',

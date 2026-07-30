@@ -12,6 +12,9 @@ Ressource FiveM (ESX Legacy) : kit d'arrivée + **Carte Chance** (roue NUI → g
 | Eau (`water`) | 5 |
 | Pain (`bread`) | 5 |
 | Carte Chance (`carte_chance`) | 1 |
+| Véhicule aléatoire (garage) | 1 |
+
+Au premier join, un modèle est tiré dans `Config.GarageVehicle.models` et inséré dans `owned_vehicles` (**rangé**, `parking` = `Config.GarageVehicle.garageId`, défaut `legion` pour ox_garage).
 
 ## Carte Chance
 
@@ -43,9 +46,21 @@ Fichier `config.lua` :
 - `Config.StarterItems` — liste / noms des items (adapte-les à ton inventaire)
 - `Config.GiveOnlyOnce` — kit une seule fois par joueur
 - `Config.SpawnBmxVehicle` — `true` pour spawner un BMX dès l'arrivée (sinon : utiliser l'item `bmx`)
+- `Config.GarageVehicle` — véhicule aléatoire au garage (`enabled`, `models`, `garageId`, colonnes SQL)
 - `Config.ChanceCard.successRate` — ex. `0.75` = 75 % de chance de gagner
 - `Config.ChanceCard.wheel` — montants + poids (plus le poids est haut, plus le lot est fréquent)
 - `Config.ChanceCard.minReward` / `maxReward` — bornes affichées
+
+### Véhicule garage (ox_garage)
+
+```lua
+Config.GarageVehicle = {
+    enabled = true,
+    garageId = 'legion', -- doit matcher un Config.Garages[].id d'ox_garage
+    models = { 'asbo', 'blista', 'panto', ... },
+    -- si pas de colonne parking : columns.parking = false
+}
+```
 
 L'item **BMX** est utilisable : il spawn un vélo à côté du joueur et se consomme.
 

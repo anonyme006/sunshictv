@@ -70,6 +70,137 @@ local function giveStarterItems(xPlayer)
     end
 end
 
+---@return string
+local function generatePlate()
+    local cfg = Config.GarageVehicle or {}
+    local prefix = tostring(cfg.platePrefix or 'ST'):upper():gsub('%s+', '')
+    if #prefix > 4 then
+        prefix = prefix:sub(1, 4)
+    end
+
+    local charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+    local remain = math.max(1, 8 - #prefix)
+    local suffix = ''
+    for _ = 1, remain do
+        local i = math.random(1, #charset)
+        suffix = suffix .. charset:sub(i, i)
+    end
+
+    return (prefix .. suffix):sub(1, 8)
+end
+
+---@param plate string
+---@return boolean
+local function plateExists(plate)
+    local cfg = Config.GarageVehicle
+    local tbl = cfg.table or 'owned_vehicles'
+    local plateCol = (cfg.columns and cfg.columns.plate) or 'plate'
+    local row = MySQL.single.await(
+        ('SELECT 1 AS ok FROM `%s` WHERE REPLACE(UPPER(`%s`), " ", "") = ? LIMIT 1'):format(tbl, plateCol),
+        { (plate or ''):gsub('%s+', ''):upper() }
+    )
+    return row ~= nil
+end
+
+--- Ajoute un véhicule aléatoire rangé dans le garage du joueur (owned_vehicles).
+---@param xPlayer table
+---@return string|nil modelName, string|nil plate
+local function giveStarterGarageVehicle(xPlayer)
+    local cfg = Config.GarageVehicle
+    if not cfg or not cfg.enabled then
+        return nil, nil
+    end
+
+    local models = cfg.models
+    if type(models) ~= 'table' or #models == 0 then
+        return nil, nil
+    end
+
+    local modelName = models[math.random(1, #models)]
+    if type(modelName) ~= 'string' or modelName == '' then
+        return nil, nil
+    end
+
+    local modelHash = joaat(modelName)
+    local plate
+    for _ = 1, 30 do
+        local candidate = generatePlate()
+        if not plateExists(candidate) then
+            plate = candidate
+            break
+        end
+    end
+
+    if not plate then
+        print(('^1[starter_pack]^0 impossible de générer une plaque unique pour %s'):format(xPlayer.identifier))
+        return nil, nil
+    end
+
+    local props = {
+        model = modelHash,
+        plate = plate,
+        engineHealth = 1000.0,
+        bodyHealth = 1000.0,
+        fuelLevel = 100.0,
+    }
+
+    local cols = cfg.columns or {}
+    local tbl = cfg.table or 'owned_vehicles'
+    local ownerCol = cols.owner or 'owner'
+    local plateCol = cols.plate or 'plate'
+    local vehicleCol = cols.vehicle or 'vehicle'
+    local storedCol = cols.stored or 'stored'
+    local typeCol = cols.type or 'type'
+    local parkingCol = cols.parking
+    local useParking = parkingCol and parkingCol ~= false
+    local stored = cfg.stored
+    if stored == nil then stored = 1 end
+    local vehicleType = cfg.vehicleType or 'car'
+    local garageId = cfg.garageId or 'legion'
+    local vehicleJson = json.encode(props)
+
+    local ok, err = pcall(function()
+        if useParking then
+            MySQL.insert.await(
+                ('INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`, `%s`) VALUES (?, ?, ?, ?, ?, ?)'):format(
+                    tbl, ownerCol, plateCol, vehicleCol, storedCol, parkingCol, typeCol
+                ),
+                { xPlayer.identifier, plate, vehicleJson, stored, garageId, vehicleType }
+            )
+        else
+            MySQL.insert.await(
+                ('INSERT INTO `%s` (`%s`, `%s`, `%s`, `%s`, `%s`) VALUES (?, ?, ?, ?, ?)'):format(
+                    tbl, ownerCol, plateCol, vehicleCol, storedCol, typeCol
+                ),
+                { xPlayer.identifier, plate, vehicleJson, stored, vehicleType }
+            )
+        end
+    end)
+
+    if not ok then
+        print(('^1[starter_pack]^0 insert véhicule échoué: %s'):format(tostring(err)))
+        return nil, nil
+    end
+
+    return modelName, plate
+end
+
+---@param src number
+---@param xPlayer table
+---@param withVehicle boolean|nil
+local function deliverKit(src, xPlayer, withVehicle)
+    giveStarterItems(xPlayer)
+
+    if withVehicle ~= false then
+        local modelName, plate = giveStarterGarageVehicle(xPlayer)
+        if modelName and plate then
+            notify(src, (Config.Locale.vehicle_received):format(modelName, plate))
+        elseif Config.GarageVehicle and Config.GarageVehicle.enabled then
+            notify(src, Config.Locale.vehicle_failed)
+        end
+    end
+end
+
 ---@return number reward amount (0 if fail)
 local function rollReward()
     local cfg = Config.ChanceCard
@@ -113,7 +244,7 @@ local function tryGiveKit(src, xPlayer)
             return
         end
 
-        giveStarterItems(xPlayer)
+        deliverKit(src, xPlayer, true)
 
         if Config.GiveOnlyOnce then
             markKitReceived(identifier)
@@ -328,7 +459,10 @@ end)
 
 ESX.RegisterCommand('givekit', 'admin', function(xPlayer)
     local src = xPlayer.source
-    giveStarterItems(xPlayer)
+    local giveVehicle = Config.GarageVehicle
+        and Config.GarageVehicle.enabled
+        and Config.GarageVehicle.giveOnAdminKit ~= false
+    deliverKit(src, xPlayer, giveVehicle)
     if Config.SpawnBmxVehicle then
         TriggerClientEvent('starter_pack:spawnBmx', src)
     end
