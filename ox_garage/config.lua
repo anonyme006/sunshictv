@@ -33,6 +33,19 @@ Config.FuelResource = 'none' -- 'ox_fuel' | 'LegacyFuel' | 'none'
 Config.CheckSpawnClear = true
 
 --[[
+    Intégration Job Creator (garages entreprise)
+    Les markers "garage" / "garage_store" du job_creator ouvrent
+    les mêmes menus ox_lib que le garage perso.
+]]
+Config.JobCreator = {
+    enabled = true,
+    -- Préfixe plaques flotte (ex: POL + 001 → POL001)
+    platePrefixLen = 3,
+    -- Remettre stored=1 au restart serveur pour toute la flotte sortie
+    resetOutOnRestart = false,
+}
+
+--[[
     Liste des garages
     target = zone ox_target (sphere / box)
     spawns = points de sortie (vector4)

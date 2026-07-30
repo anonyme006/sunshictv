@@ -16,24 +16,29 @@ Garage moderne **ox_lib** + **ox_target** pour ESX — menus contextuels style R
 - Assis dans le véhicule au garage → menu **Ranger / Annuler**
 - **Progress circle** au spawn et au rangement
 - Notifications **ox_lib**
-- Fermeture auto après action réussie
-- Rafraîchissement des données à chaque ouverture
 
-## Dépendances
+## Intégration Job Creator (entreprises)
 
-```
-es_extended
-ox_lib
-ox_target
-oxmysql
+Avec `job_creator` + `Config.UseOxGarage = true` :
+
+1. Dans **/jobcreator** → marqueur **Garage** + véhicules job
+2. Les employés ouvrent le **même menu ox_lib** sur le marker
+3. Flotte stockée dans `ox_garage_job_vehicles` (plaque, états, props)
+4. Sync auto à la sauvegarde / suppression d’un véhicule job
+
+Exports :
+
+```lua
+exports.ox_garage:OpenJobGarage({
+    job = 'police',
+    garageId = '12',
+    label = 'Garage Police',
+    spawns = { vec4(...) },
+    store = { coords = vec3(...), radius = 8.0 },
+})
 ```
 
 ## Installation
-
-1. Copie `ox_garage` dans `resources`
-2. Adapte `Config.Columns` si ta table `owned_vehicles` diffère
-3. Si pas de colonne `parking` / garage : `Config.UseGarageColumn = false`
-4. `server.cfg` :
 
 ```cfg
 ensure ox_lib
@@ -41,34 +46,7 @@ ensure ox_target
 ensure oxmysql
 ensure es_extended
 ensure ox_garage
+ensure job_creator
 ```
 
-5. Configure les garages dans `config.lua` (coords, spawns, blips)
-
-## Carburant
-
-```lua
-Config.FuelResource = 'none'      -- natif
--- Config.FuelResource = 'ox_fuel'
--- Config.FuelResource = 'LegacyFuel'
-```
-
-## Table SQL attendue
-
-Colonnes utilisées sur `owned_vehicles` :
-
-| Colonne | Rôle |
-|---------|------|
-| `owner` | identifier joueur |
-| `plate` | plaque |
-| `vehicle` | JSON props |
-| `stored` | 1 = rangé, 0 = sorti |
-| `parking` | id garage (optionnel) |
-| `type` | `car` / `boat` / … |
-
-## Utilisation
-
-1. Approche le point **ox_target** du garage
-2. « Ouvrir le garage » → liste des véhicules
-3. Sélectionne un véhicule → Sortir / Infos
-4. Pour ranger : monte dans ton véhicule près du garage → target « Ranger » ou ouvre le menu
+Table flotte créée auto (`sql/job_vehicles.sql`).

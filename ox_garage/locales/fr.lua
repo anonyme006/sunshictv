@@ -32,4 +32,9 @@ Locales['fr'] = {
     notify_too_far = 'Trop loin du garage.',
     info_title = 'Informations — %s',
     no_spawn = 'Aucun point de spawn libre.',
+    job_menu_title = 'Garage entreprise — %s',
+    job_wrong_job = 'Tu ne fais pas partie de cette entreprise.',
+    job_grade = 'Grade insuffisant.',
+    job_not_job_vehicle = 'Ce véhicule n\'appartient pas à l\'entreprise.',
+    job_fleet_synced = 'Flotte entreprise synchronisée.',
 }
