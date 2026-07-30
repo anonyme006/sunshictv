@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carte Chance</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app" class="hidden" aria-hidden="true">
+    <div class="backdrop"></div>
+
+    <div class="panel">
+      <header class="panel__header">
+        <p class="panel__brand">Carte Chance</p>
+        <h1 class="panel__title">Tourne pour gagner</h1>
+        <p class="panel__sub">
+          Une seule tentative · Gain versé en banque ·
+          <span id="rangeLabel">10 000 $ – 35 000 $</span>
+        </p>
+      </header>
+
+      <div class="wheel-wrap">
+        <div class="wheel-pointer" aria-hidden="true"></div>
+        <canvas id="wheel" width="420" height="420"></canvas>
+        <div class="wheel-center">
+          <span>$</span>
+        </div>
+      </div>
+
+      <div id="resultBox" class="result hidden">
+        <p id="resultText"></p>
+      </div>
+
+      <div class="actions">
+        <button id="btnSpin" type="button" class="btn btn--primary">Tourner</button>
+        <button id="btnClose" type="button" class="btn btn--ghost">Fermer</button>
+      </div>
+
+      <p class="hint">Taux de réussite : <strong id="rateLabel">75 %</strong></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
