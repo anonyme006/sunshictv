@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Job Creator</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- ADMIN -->
+  <div id="admin" class="hidden">
+    <div class="admin-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand__mark">JC</span>
+          <div>
+            <strong>Job Creator</strong>
+            <small>v1.0</small>
+          </div>
+        </div>
+        <nav class="nav" id="adminNav">
+          <button data-tab="jobs" class="nav__btn active">Jobs</button>
+          <button data-tab="grades" class="nav__btn">Grades</button>
+          <button data-tab="markers" class="nav__btn">Markers</button>
+          <button data-tab="vehicles" class="nav__btn">Véhicules</button>
+          <button data-tab="shops" class="nav__btn">Boutique</button>
+          <button data-tab="crafts" class="nav__btn">Crafts</button>
+          <button data-tab="tools" class="nav__btn">Outils</button>
+        </nav>
+        <button id="btnAdminClose" class="btn btn--ghost btn--block">Fermer</button>
+      </aside>
+
+      <main class="main">
+        <header class="main__head">
+          <h1 id="tabTitle">Jobs</h1>
+          <div class="main__actions">
+            <select id="jobFilter" class="input input--sm"></select>
+            <button id="btnReload" class="btn btn--soft">Recharger</button>
+          </div>
+        </header>
+
+        <!-- JOBS -->
+        <section id="tab-jobs" class="tab active">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head">
+                <h2>Liste des jobs</h2>
+                <button id="btnNewJob" class="btn btn--primary btn--sm">+ Nouveau</button>
+              </div>
+              <div id="jobsList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2 id="jobFormTitle">Créer un job</h2>
+              <form id="jobForm" class="form">
+                <input type="hidden" name="editing" value="0" />
+                <label>Nom technique (ex: police)
+                  <input class="input" name="name" required pattern="[a-z0-9_]+" placeholder="mechanic" />
+                </label>
+                <label>Label
+                  <input class="input" name="label" required placeholder="Mécano" />
+                </label>
+                <div class="row">
+                  <label>Type
+                    <select class="input" name="type">
+                      <option value="civil">Civil</option>
+                      <option value="illegal">Illégal</option>
+                      <option value="ems">EMS</option>
+                      <option value="leo">Forces de l'ordre</option>
+                    </select>
+                  </label>
+                  <label class="check"><input type="checkbox" name="whitelisted" checked /> Whitelist</label>
+                </div>
+                <fieldset>
+                  <legend>Blip principal</legend>
+                  <div class="row row--3">
+                    <label>Sprite <input class="input" type="number" name="blip_sprite" value="0" /></label>
+                    <label>Couleur <input class="input" type="number" name="blip_color" value="0" /></label>
+                    <label>Scale <input class="input" type="number" step="0.1" name="blip_scale" value="0.8" /></label>
+                  </div>
+                  <div class="row">
+                    <button type="button" class="btn btn--soft btn--sm" id="btnJobCoords">Coords joueur</button>
+                    <input class="input" name="blip_coords" placeholder="x,y,z" readonly />
+                  </div>
+                </fieldset>
+                <fieldset>
+                  <legend>Actions F6</legend>
+                  <div id="actionsChecks" class="checks"></div>
+                </fieldset>
+                <button type="submit" class="btn btn--primary">Sauvegarder le job</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- GRADES -->
+        <section id="tab-grades" class="tab">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head">
+                <h2>Grades</h2>
+                <button id="btnNewGrade" class="btn btn--primary btn--sm">+ Grade</button>
+              </div>
+              <div id="gradesList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2>Éditer grade</h2>
+              <form id="gradeForm" class="form">
+                <input type="hidden" name="id" />
+                <label>Job
+                  <select class="input" name="job_name" id="gradeJobSelect" required></select>
+                </label>
+                <div class="row">
+                  <label>Grade n° <input class="input" type="number" name="grade" value="0" min="0" required /></label>
+                  <label>Salaire <input class="input" type="number" name="salary" value="200" min="0" /></label>
+                </div>
+                <label>Nom technique <input class="input" name="name" required placeholder="boss" /></label>
+                <label>Label <input class="input" name="label" required placeholder="Patron" /></label>
+                <fieldset>
+                  <legend>Permissions</legend>
+                  <div id="permChecks" class="checks"></div>
+                </fieldset>
+                <button type="submit" class="btn btn--primary">Sauvegarder</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- MARKERS -->
+        <section id="tab-markers" class="tab">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head">
+                <h2>Markers</h2>
+                <button id="btnNewMarker" class="btn btn--primary btn--sm">+ Marker</button>
+              </div>
+              <div id="markersList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2>Éditer marker</h2>
+              <form id="markerForm" class="form">
+                <input type="hidden" name="id" />
+                <label>Job <select class="input" name="job_name" id="markerJobSelect" required></select></label>
+                <div class="row">
+                  <label>Type
+                    <select class="input" name="type" id="markerTypeSelect"></select>
+                  </label>
+                  <label>Label <input class="input" name="label" required /></label>
+                </div>
+                <div class="row">
+                  <label>Grade min <input class="input" type="number" name="min_grade" value="0" /></label>
+                  <label class="check"><input type="checkbox" name="public" /> Public</label>
+                  <label class="check"><input type="checkbox" name="blip_enabled" /> Blip</label>
+                </div>
+                <div class="row">
+                  <button type="button" class="btn btn--soft btn--sm" id="btnMarkerCoords">Position joueur</button>
+                  <input class="input" name="coords" placeholder="x,y,z" required />
+                </div>
+                <div class="row row--3">
+                  <label>Marker type <input class="input" type="number" name="marker_type" value="1" /></label>
+                  <label>Blip sprite <input class="input" type="number" name="blip_sprite" value="1" /></label>
+                  <label>Blip color <input class="input" type="number" name="blip_color" value="0" /></label>
+                </div>
+                <fieldset id="markerDataFields">
+                  <legend>Données spécifiques</legend>
+                  <div id="markerDataInputs" class="form"></div>
+                </fieldset>
+                <button type="submit" class="btn btn--primary">Sauvegarder marker</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- VEHICLES -->
+        <section id="tab-vehicles" class="tab">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head"><h2>Véhicules job</h2><button id="btnNewVehicle" class="btn btn--primary btn--sm">+ Véhicule</button></div>
+              <div id="vehiclesList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2>Véhicule</h2>
+              <form id="vehicleForm" class="form">
+                <input type="hidden" name="id" />
+                <label>Job <select class="input" name="job_name" id="vehJobSelect" required></select></label>
+                <label>Marker garage ID (optionnel) <input class="input" type="number" name="marker_id" /></label>
+                <div class="row">
+                  <label>Modèle <input class="input" name="model" required placeholder="police" /></label>
+                  <label>Label <input class="input" name="label" required placeholder="Cruiser" /></label>
+                </div>
+                <div class="row">
+                  <label>Grade min <input class="input" type="number" name="min_grade" value="0" /></label>
+                  <label>Livery <input class="input" type="number" name="livery" value="0" /></label>
+                </div>
+                <button type="submit" class="btn btn--primary">Sauvegarder</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- SHOPS -->
+        <section id="tab-shops" class="tab">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head"><h2>Items boutique / armurerie</h2><button id="btnNewShop" class="btn btn--primary btn--sm">+ Item</button></div>
+              <div id="shopsList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2>Item boutique</h2>
+              <form id="shopForm" class="form">
+                <input type="hidden" name="id" />
+                <label>Job <select class="input" name="job_name" id="shopJobSelect" required></select></label>
+                <label>Marker ID (optionnel) <input class="input" type="number" name="marker_id" /></label>
+                <div class="row">
+                  <label>Item / arme <input class="input" name="item" required placeholder="WEAPON_PISTOL" /></label>
+                  <label>Label <input class="input" name="label" required /></label>
+                </div>
+                <div class="row">
+                  <label>Prix <input class="input" type="number" name="price" value="0" /></label>
+                  <label>Grade min <input class="input" type="number" name="min_grade" value="0" /></label>
+                  <label>Type
+                    <select class="input" name="type">
+                      <option value="item">Item</option>
+                      <option value="weapon">Arme</option>
+                    </select>
+                  </label>
+                </div>
+                <button type="submit" class="btn btn--primary">Sauvegarder</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- CRAFTS -->
+        <section id="tab-crafts" class="tab">
+          <div class="split">
+            <div class="card list-card">
+              <div class="card__head"><h2>Recettes craft</h2><button id="btnNewCraft" class="btn btn--primary btn--sm">+ Recette</button></div>
+              <div id="craftsList" class="list"></div>
+            </div>
+            <div class="card form-card">
+              <h2>Craft</h2>
+              <form id="craftForm" class="form">
+                <input type="hidden" name="id" />
+                <label>Job <select class="input" name="job_name" id="craftJobSelect" required></select></label>
+                <label>Marker ID (optionnel) <input class="input" type="number" name="marker_id" /></label>
+                <label>Label <input class="input" name="label" required /></label>
+                <div class="row">
+                  <label>Résultat item <input class="input" name="result_item" required /></label>
+                  <label>Quantité <input class="input" type="number" name="result_count" value="1" /></label>
+                </div>
+                <div class="row">
+                  <label>Durée (ms) <input class="input" type="number" name="duration" value="5000" /></label>
+                  <label>Grade min <input class="input" type="number" name="min_grade" value="0" /></label>
+                </div>
+                <label>Ingrédients (item:count, item:count)
+                  <input class="input" name="ingredients" placeholder="iron:2, wood:1" />
+                </label>
+                <button type="submit" class="btn btn--primary">Sauvegarder</button>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- TOOLS -->
+        <section id="tab-tools" class="tab">
+          <div class="card">
+            <h2>Outils admin</h2>
+            <p class="muted">Attribuer un job à un joueur (ID serveur).</p>
+            <form id="setJobForm" class="form form--inline">
+              <input class="input" name="targetId" type="number" placeholder="ID joueur" required />
+              <select class="input" name="job" id="toolsJobSelect" required></select>
+              <input class="input" name="grade" type="number" value="0" placeholder="Grade" />
+              <button class="btn btn--primary" type="submit">Attribuer</button>
+            </form>
+            <hr />
+            <p class="muted">Coords actuelles du joueur :</p>
+            <div class="row">
+              <code id="liveCoords" class="code">—</code>
+              <button type="button" id="btnCopyCoords" class="btn btn--soft btn--sm">Actualiser</button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- PLAYER MENUS -->
+  <div id="playerMenu" class="hidden">
+    <div class="pm">
+      <header class="pm__head">
+        <h2 id="pmTitle">Menu</h2>
+        <button id="pmClose" class="icon-btn" type="button">✕</button>
+      </header>
+      <div id="pmBody" class="pm__body"></div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
