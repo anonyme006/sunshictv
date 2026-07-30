@@ -81,15 +81,32 @@ Config.Garages = {
         label = 'Garage Public — Legion',
         type = 'car',
         blip = { enabled = true, sprite = 357, color = 5, scale = 0.85 }, -- 5 = jaune
+        -- Point piéton (ouvrir le menu)
         coords = vec3(215.83, -810.14, 30.73),
         target = {
             coords = vec3(215.83, -810.14, 30.73),
             radius = 2.0,
             debug = false,
         },
+        -- Point véhicule (ranger) — parking Legion
         store = {
-            coords = vec3(215.83, -810.14, 30.73),
-            radius = 8.0,
+            coords = vec3(223.50, -799.20, 30.60),
+            radius = 14.0, -- distance max pour ranger
+            marker = {
+                enabled = true,
+                type = 36, -- voiture
+                scale = vec3(0.9, 0.9, 0.9),
+                color = { r = 255, g = 200, b = 40, a = 160 },
+                bobUpAndDown = true,
+                faceCamera = true,
+                rotate = false,
+                drawDistance = 35.0,
+            },
+            target = {
+                coords = vec3(223.50, -799.20, 30.60),
+                radius = 4.5,
+                debug = false,
+            },
         },
         spawns = {
             vec4(222.25, -804.13, 30.58, 248.0),
