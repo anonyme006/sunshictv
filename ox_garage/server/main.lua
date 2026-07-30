@@ -3,6 +3,43 @@ local ESX = exports['es_extended']:getSharedObject()
 ---@type table<string, number> plate -> netId of spawned vehicles
 local spawnedByPlate = {}
 
+--- Crée owned_vehicles si absente + assure la colonne parking
+MySQL.ready(function()
+    local sql = LoadResourceFile(GetCurrentResourceName(), 'sql/owned_vehicles.sql')
+    if sql then
+        for statement in sql:gmatch('([^;]+);') do
+            local trimmed = statement:gsub('^%s+', ''):gsub('%s+$', '')
+            if trimmed ~= '' and not trimmed:match('^%-%-') then
+                MySQL.query.await(trimmed)
+            end
+        end
+    end
+
+    local tbl = (Config.Columns and Config.Columns.table) or 'owned_vehicles'
+    local garageCol = (Config.Columns and Config.Columns.garage) or 'parking'
+
+    local col = MySQL.single.await([[
+        SELECT COLUMN_NAME AS name
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+    ]], { tbl, garageCol })
+
+    if not col then
+        MySQL.query.await(
+            ('ALTER TABLE `%s` ADD COLUMN `%s` VARCHAR(60) DEFAULT NULL'):format(tbl, garageCol)
+        )
+        print(('^2[ox_garage]^0 colonne `%s`.`%s` ajoutée'):format(tbl, garageCol))
+    end
+
+    -- Index parking (ignore si déjà présent)
+    pcall(function()
+        MySQL.query.await(('CREATE INDEX `parking` ON `%s` (`%s`)'):format(tbl, garageCol))
+    end)
+end)
+
 local function _(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then

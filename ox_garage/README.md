@@ -87,10 +87,11 @@ ensure es_extended
 ensure ox_garage
 ```
 
-Tables créées auto au démarrage :
+Tables créées / mises à jour auto au démarrage :
 
-- `ox_garage_private_access`
-- `ox_garage_job_garages`
-- `ox_garage_job_vehicles`
+- `owned_vehicles` (+ colonne `parking`) — véhicules **perso** (public / privé / perso en entreprise)
+- `ox_garage_private_access` — achats garages privés
+- `ox_garage_job_garages` — emplacements garage entreprise (`/addjobgarage`)
+- `ox_garage_job_vehicles` — flotte entreprise
 
-Nécessite la colonne `parking` (ou `Config.Columns.garage`) sur `owned_vehicles`.
+SQL manuel (si besoin) : `ox_garage/sql/owned_vehicles.sql`
