@@ -49,8 +49,8 @@ Config.MarkerTypes = {
     { id = 'boss',       label = 'Menu Patron',      icon = 'briefcase' },
     { id = 'stash',      label = 'Coffre',            icon = 'box' },
     { id = 'cloakroom',  label = 'Vestiaire',         icon = 'shirt' },
-    { id = 'garage',     label = 'Garage',            icon = 'car' },
-    { id = 'garage_store', label = 'Ranger véhicule', icon = 'parking' },
+    { id = 'garage',     label = 'Garage (ox_garage)', icon = 'car' },
+    { id = 'garage_store', label = 'Ranger véhicule (ox_garage)', icon = 'parking' },
     { id = 'shop',       label = 'Boutique job',      icon = 'cart' },
     { id = 'armory',     label = 'Armurerie',         icon = 'gun' },
     { id = 'duty',       label = 'Prise de service',  icon = 'badge' },
@@ -110,4 +110,5 @@ Config.Debug = false
 
 -- Utiliser ox_garage (menus ox_lib) pour les markers garage entreprise
 -- Nécessite la ressource `ox_garage` démarrée
+-- Dans le panel : onglet ox_garage + champs Mode / Garage ox_garage sur markers Garage
 Config.UseOxGarage = true

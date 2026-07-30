@@ -39,6 +39,7 @@ ensure job_creator
 - `esx_skin` / `skinchanger` pour le vestiaire
 - `esx_billing` pour les factures société
 - `ox_inventory` si `Config.Inventory = 'ox'`
+- **`ox_garage`** + `ox_lib` / `ox_target` si `Config.UseOxGarage = true`
 
 ## Utilisation rapide
 
@@ -46,9 +47,26 @@ ensure job_creator
 2. Crée un job (ex: `mechanic` / Mécano)
 3. Ajoute des grades + permissions
 4. Place-toi au bon endroit → **Markers** → « Position joueur » → type (boss, garage…)
-5. Pour un garage : ajoute des véhicules liés au job
-6. Active les actions F6 dans l’onglet Job
-7. Attribue le job via **Outils** ou menu patron
+5. Onglet **ox_garage** : vois les garages dispo → « Utiliser dans marker »
+6. Pour un garage flotte : ajoute des véhicules liés au job
+7. Active les actions F6 dans l’onglet Job
+8. Attribue le job via **Outils** ou menu patron
+
+## ox_garage dans le panel
+
+| Champ marker | Effet |
+|--------------|--------|
+| **Mode** `job_fleet` | Ouvre la flotte entreprise ox_garage |
+| **Mode** `ox_garage` | Ouvre un garage perso/public/privé ox_garage (`legion`, `pinkcage`…) |
+| **Garage ox_garage** | ID du garage lié (liste auto) |
+| **Créer emplacement ox_garage job** | Appelle `AddJobGarage` à la position du marker |
+
+```cfg
+ensure ox_lib
+ensure ox_target
+ensure ox_garage
+ensure job_creator
+```
 
 ## Types de markers & data
 
@@ -56,7 +74,8 @@ ensure job_creator
 - **process** : `need_item`, `need_count`, `give_item`, `give_count`
 - **sell** : `item`, `price`, `society_percent`, `black_money`
 - **teleport** : `destination` (x,y,z,w)
-- **garage** : `spawn` (x,y,z,w)
+- **garage** : `ox_mode`, `ox_garage_id`, `register_job_garage`, `spawn`, `radius`
+- **garage_store** : `ox_mode`, `ox_garage_id`, `radius`
 - **wash** : `fee_percent`
 
 ## Config importante

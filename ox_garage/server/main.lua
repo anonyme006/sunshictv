@@ -431,4 +431,22 @@ AddEventHandler('playerDropped', function()
     -- keep spawnedByPlate — véhicule peut rester en monde
 end)
 
+--- Liste des garages perso (public / privé) pour d'autres ressources (job_creator)
+exports('GetGarages', function()
+    local list = {}
+    for _, g in ipairs(Config.Garages or {}) do
+        list[#list + 1] = {
+            id = g.id,
+            label = g.label,
+            kind = g.kind or 'public',
+            type = g.type or Config.DefaultType or 'car',
+            coords = g.coords and { x = g.coords.x, y = g.coords.y, z = g.coords.z } or nil,
+            price = g.price,
+            slots = g.slots,
+            maxSlots = g.maxSlots,
+        }
+    end
+    return list
+end)
+
 print('^2[ox_garage]^0 serveur chargé.')

@@ -8,6 +8,38 @@ RegisterNetEvent('job_creator:saveMarker', function(data)
         return JC.Notify(src, L('invalid_data'))
     end
 
+    data.data = data.data or {}
+
+    -- Créer / lier un garage entreprise ox_garage à la position du marker
+    if Config.UseOxGarage
+        and GetResourceState('ox_garage') == 'started'
+        and (data.type == 'garage' or data.type == 'garage_store')
+        and (data.data.register_job_garage == true or data.data.register_job_garage == 'true')
+        and (not data.data.ox_garage_id or data.data.ox_garage_id == '')
+    then
+        local heading = tonumber(data.data.heading)
+            or (data.data.spawn and tonumber(data.data.spawn.w))
+            or 0.0
+        local ok, garage = pcall(function()
+            return exports.ox_garage:AddJobGarage({
+                job = data.job_name,
+                label = data.label or ('Garage ' .. data.job_name),
+                x = data.coords.x,
+                y = data.coords.y,
+                z = data.coords.z,
+                heading = heading,
+                min_grade = data.min_grade or 0,
+                store_radius = tonumber(data.data.radius) or 10.0,
+                created_by = xPlayer.identifier,
+            })
+        end)
+        if ok and garage and garage.id then
+            data.data.ox_garage_id = garage.id
+            data.data.ox_mode = data.data.ox_mode or 'job_fleet'
+            data.data.register_job_garage = false
+        end
+    end
+
     local coords = json.encode(data.coords)
     local mdata = json.encode(data.data or {})
     local scale = json.encode(data.marker_scale or Config.DefaultMarker.scale)

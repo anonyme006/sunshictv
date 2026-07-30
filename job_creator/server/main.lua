@@ -7,6 +7,8 @@ JC.ShopItems = {}
 JC.Crafts = {}
 JC.Ready = false
 
+local ESX = exports['es_extended']:getSharedObject()
+
 function L(key, ...)
     local str = (Locales[Config.Locale] and Locales[Config.Locale][key]) or key
     if ... then
@@ -271,11 +273,52 @@ function JC.GetClientPayload()
     }
 end
 
+--- Liste des garages ox_garage pour le panneau admin
+function JC.GetOxGarageList()
+    local list = {}
+    if GetResourceState('ox_garage') ~= 'started' then
+        return list
+    end
+
+    pcall(function()
+        local personal = exports.ox_garage:GetGarages() or {}
+        for _, g in ipairs(personal) do
+            list[#list + 1] = {
+                id = g.id,
+                label = g.label or g.id,
+                kind = g.kind or 'public',
+                job = nil,
+                source = 'config',
+            }
+        end
+    end)
+
+    pcall(function()
+        local jobGarages = exports.ox_garage:GetJobGarages() or {}
+        for _, g in ipairs(jobGarages) do
+            list[#list + 1] = {
+                id = g.id,
+                label = g.label or g.id,
+                kind = 'job',
+                job = g.job or g.job_name,
+                source = 'dynamic',
+            }
+        end
+    end)
+
+    table.sort(list, function(a, b)
+        return tostring(a.label) < tostring(b.label)
+    end)
+    return list
+end
+
 function JC.GetAdminPayload()
     local payload = JC.GetClientPayload()
     payload.markerTypes = Config.MarkerTypes
     payload.permissions = Config.Permissions
     payload.defaultActions = Config.DefaultActions
+    payload.useOxGarage = Config.UseOxGarage == true and GetResourceState('ox_garage') == 'started'
+    payload.oxGarages = JC.GetOxGarageList()
     return payload
 end
 
@@ -297,6 +340,13 @@ RegisterNetEvent('job_creator:requestSync', function()
     local src = source
     if not JC.Ready then return end
     TriggerClientEvent('job_creator:sync', src, JC.GetClientPayload())
+end)
+
+RegisterNetEvent('job_creator:requestOxGarages', function()
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    if not JC.IsAdmin(xPlayer) then return end
+    TriggerClientEvent('job_creator:oxGarages', src, JC.GetOxGarageList())
 end)
 
 AddEventHandler('esx:playerLoaded', function(playerId)

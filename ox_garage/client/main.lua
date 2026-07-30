@@ -1,5 +1,19 @@
 local blips = {}
 
+--- Liste légère des garages (client) pour NUI / autres scripts
+exports('GetGarages', function()
+    local list = {}
+    for _i, g in ipairs(Config.Garages or {}) do
+        list[#list + 1] = {
+            id = g.id,
+            label = g.label,
+            kind = g.kind or 'public',
+            type = g.type or 'car',
+        }
+    end
+    return list
+end)
+
 function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then

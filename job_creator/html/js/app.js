@@ -11,6 +11,8 @@
     markerTypes: [],
     permissions: [],
     defaultActions: [],
+    oxGarages: [],
+    useOxGarage: false,
     selectedJob: null,
     playerCoords: null,
     playerMenu: null,
@@ -301,12 +303,51 @@
       { name: 'fee_percent', label: 'Frais %', placeholder: '30' },
     ],
     garage: [
+      {
+        name: 'ox_mode',
+        label: 'Mode ox_garage',
+        type: 'select',
+        options: [
+          { value: 'job_fleet', label: 'Flotte entreprise (ox_garage)' },
+          { value: 'ox_garage', label: 'Garage ox_garage perso / public / privé' },
+        ],
+      },
+      { name: 'ox_garage_id', label: 'Garage ox_garage', type: 'ox_garage_select' },
+      { name: 'register_job_garage', label: 'Créer emplacement ox_garage job ici', type: 'select', options: [
+        { value: 'false', label: 'Non' },
+        { value: 'true', label: 'Oui (AddJobGarage à la position)' },
+      ]},
       { name: 'spawn', label: 'Spawn véhicule x,y,z,w', placeholder: 'utiliser bouton coords' },
+      { name: 'radius', label: 'Rayon rangement', placeholder: '8' },
     ],
     garage_store: [
+      {
+        name: 'ox_mode',
+        label: 'Mode ox_garage',
+        type: 'select',
+        options: [
+          { value: 'job_fleet', label: 'Flotte entreprise (ox_garage)' },
+          { value: 'ox_garage', label: 'Garage ox_garage perso / public / privé' },
+        ],
+      },
+      { name: 'ox_garage_id', label: 'Garage ox_garage', type: 'ox_garage_select' },
       { name: 'radius', label: 'Rayon rangement', placeholder: '8' },
     ],
   };
+
+  function oxGarageOptionsHtml(selected) {
+    const list = state.oxGarages || [];
+    const opts = [`<option value="">— Aucun / marker ID —</option>`]
+      .concat(list.map((g) => {
+        const kind = g.kind || 'public';
+        const job = g.job ? ` · ${g.job}` : '';
+        const src = g.source === 'dynamic' ? 'dyn' : 'cfg';
+        const label = `${g.label} (${g.id}) [${kind}/${src}${job}]`;
+        const sel = String(selected || '') === String(g.id) ? ' selected' : '';
+        return `<option value="${g.id}"${sel}>${label}</option>`;
+      }));
+    return opts.join('');
+  }
 
   function renderMarkerDataFields(type, data = {}) {
     const box = $('#markerDataInputs');
@@ -323,21 +364,42 @@
         }
       }
       if (f.name === 'black_money') val = val === true ? 'true' : (val === false ? 'false' : (val || 'false'));
+      if (f.name === 'register_job_garage') val = (val === true || val === 'true') ? 'true' : 'false';
+      if (f.name === 'ox_mode') val = val || 'job_fleet';
+
+      if (f.type === 'ox_garage_select') {
+        return `<label>${f.label}
+          <select class="input" name="data_${f.name}">${oxGarageOptionsHtml(val)}</select>
+          <button type="button" class="btn btn--soft btn--sm" id="btnRefreshOxGarages" style="margin-top:6px">Rafraîchir liste ox_garage</button>
+        </label>`;
+      }
+      if (f.type === 'select') {
+        const options = (f.options || []).map((o) => {
+          const sel = String(val ?? '') === String(o.value) ? ' selected' : '';
+          return `<option value="${o.value}"${sel}>${o.label}</option>`;
+        }).join('');
+        return `<label>${f.label}<select class="input" name="data_${f.name}">${options}</select></label>`;
+      }
       return `<label>${f.label}<input class="input" name="data_${f.name}" value="${val ?? ''}" placeholder="${f.placeholder || ''}" /></label>`;
     }).join('');
+
+    $('#btnRefreshOxGarages')?.addEventListener('click', () => {
+      post('adminGetOxGarages', {});
+    });
   }
 
   function parseMarkerData(type, form) {
     const fields = MARKER_DATA_FIELDS[type] || [];
     const data = {};
     fields.forEach((f) => {
-      const raw = form[`data_${f.name}`]?.value?.trim();
-      if (!raw) return;
+      const el = form[`data_${f.name}`];
+      const raw = el?.value?.trim?.() ?? el?.value;
+      if (raw === undefined || raw === null || raw === '') return;
       if (f.name === 'destination' || f.name === 'spawn') {
-        const p = raw.split(',').map(Number);
+        const p = String(raw).split(',').map(Number);
         data[f.name] = { x: p[0], y: p[1], z: p[2], w: p[3] || 0 };
-      } else if (f.name === 'black_money') {
-        data[f.name] = raw === 'true';
+      } else if (f.name === 'black_money' || f.name === 'register_job_garage') {
+        data[f.name] = String(raw) === 'true';
       } else if (['count', 'need_count', 'give_count', 'price', 'society_percent', 'fee_percent', 'radius'].includes(f.name)) {
         data[f.name] = Number(raw);
       } else {
@@ -615,11 +677,54 @@
     }
   });
 
+  function renderOxGaragesPanel() {
+    const list = $('#oxGaragesList');
+    const status = $('#oxGarageStatus');
+    if (status) {
+      status.textContent = state.useOxGarage
+        ? `${(state.oxGarages || []).length} garage(s) ox_garage — utilise-les dans Markers (Garage / Ranger).`
+        : 'ox_garage non détecté (ensure ox_garage + Config.UseOxGarage = true).';
+    }
+    if (!list) return;
+    const rows = state.oxGarages || [];
+    list.innerHTML = rows.map((g) => `
+      <div class="list-item">
+        <div>
+          <div class="list-item__title">${g.label || g.id}</div>
+          <div class="list-item__meta">id: ${g.id} · ${g.kind || '?'}${g.job ? ` · job ${g.job}` : ''} · ${g.source || ''}</div>
+        </div>
+        <div class="list-item__actions">
+          <button class="btn btn--soft btn--sm" data-use-ox="${g.id}">Utiliser dans marker</button>
+        </div>
+      </div>
+    `).join('') || '<p class="muted">Aucun garage ox_garage</p>';
+
+    list.querySelectorAll('[data-use-ox]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        // Prépare un marker garage lié à cet id
+        document.querySelector('[data-tab="markers"]')?.click();
+        const f = $('#markerForm');
+        if (!f) return;
+        f.type.value = 'garage';
+        f.label.value = btn.closest('.list-item')?.querySelector('.list-item__title')?.textContent || 'Garage';
+        renderMarkerDataFields('garage', {
+          ox_mode: String(btn.dataset.useOx).startsWith('job_') ? 'job_fleet' : 'ox_garage',
+          ox_garage_id: btn.dataset.useOx,
+          register_job_garage: 'false',
+          radius: 8,
+        });
+      });
+    });
+  }
+
+  $('#btnRefreshOxGaragesTab')?.addEventListener('click', () => post('adminGetOxGarages', {}));
+
   function renderAll() {
     fillJobSelects();
     renderJobs();
     renderGrades();
     renderMarkers();
+    renderOxGaragesPanel();
     renderVehicles();
     renderShops();
     renderCrafts();
@@ -906,14 +1011,37 @@
       state.markerTypes = d.markerTypes || [];
       state.permissions = d.permissions || [];
       state.defaultActions = d.defaultActions || [];
+      state.oxGarages = d.oxGarages || [];
+      state.useOxGarage = !!d.useOxGarage;
       state.playerCoords = msg.playerCoords;
       $('#admin').classList.remove('hidden');
       initMarkerTypes();
       buildActionChecks({});
       buildPermChecks({});
       renderAll();
+      renderOxGaragesPanel();
       if (state.playerCoords) {
         $('#liveCoords').textContent = `vector4(${state.playerCoords.x}, ${state.playerCoords.y}, ${state.playerCoords.z}, ${state.playerCoords.w || 0})`;
+      }
+    }
+
+    if (msg.action === 'oxGarages') {
+      state.oxGarages = msg.data || [];
+      renderOxGaragesPanel();
+      const type = $('#markerTypeSelect')?.value;
+      if (type === 'garage' || type === 'garage_store') {
+        const mode = $('select[name="data_ox_mode"]')?.value || 'job_fleet';
+        const currentId = $('select[name="data_ox_garage_id"]')?.value || '';
+        const radius = $('input[name="data_radius"]')?.value || '8';
+        const spawn = $('input[name="data_spawn"]')?.value || '';
+        const reg = $('select[name="data_register_job_garage"]')?.value || 'false';
+        renderMarkerDataFields(type, {
+          ox_mode: mode,
+          ox_garage_id: currentId,
+          radius,
+          spawn,
+          register_job_garage: reg,
+        });
       }
     }
 

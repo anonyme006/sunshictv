@@ -190,6 +190,15 @@ function OpenGarageVehicleList(garageId)
     lib.showContext('ox_garage_main_' .. garageId)
 end
 
+--- Export pour job_creator / autres ressources
+exports('OpenGarage', function(garageId)
+    OpenGarageMenu(garageId)
+end)
+
+exports('OpenGarageStore', function(garageId)
+    OpenStoreMenu(garageId)
+end)
+
 --- Menu principal : liste des véhicules
 function OpenGarageMenu(garageId)
     local garage = GetGarageById(garageId)
