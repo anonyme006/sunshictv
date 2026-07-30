@@ -59,6 +59,10 @@ exports.ox_garage:GetJobGarages()
 
 Les véhicules de flotte restent gérés via Job Creator (`ox_garage_job_vehicles`).
 
+Les employés peuvent aussi **ranger leurs véhicules perso** dans un garage entreprise
+(`Config.JobCreator.allowPersonalVehicles = true`) : stockés dans `owned_vehicles` avec
+`parking` = id du garage job.
+
 ## Fourrières
 
 | | Générale | Mécano |
