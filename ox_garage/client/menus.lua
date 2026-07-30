@@ -100,7 +100,6 @@ function OpenVehicleDetailMenu(garageId, vehicle)
             icon = GetVehicleIcon(vehicle.model),
             iconColor = stored and Config.StatusColors.stored or Config.StatusColors.out,
             metadata = statusMeta(vehicle),
-            readOnly = true,
         },
     }
 
@@ -232,7 +231,6 @@ function OpenStoreMenu(garageId)
                 ),
                 icon = GetVehicleIcon(model),
                 iconColor = Config.StatusColors.out,
-                readOnly = true,
             },
             {
                 title = _('store_vehicle'),
