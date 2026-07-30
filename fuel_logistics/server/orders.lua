@@ -1,7 +1,7 @@
 local function notifyJob(message)
     if not Config.AutoOrders.notifyEmployees then return end
     local xPlayers = FL.ESX.GetExtendedPlayers and FL.ESX.GetExtendedPlayers('job', Config.JobName) or {}
-    for _, xp in pairs(xPlayers) do
+    for _i, xp in pairs(xPlayers) do
         FL.Notify(xp.source, message, 'inform')
         TriggerClientEvent('fuel_logistics:orderPing', xp.source)
     end
@@ -24,7 +24,7 @@ local function createOrder(targetType, targetId, targetName, liters)
         VALUES (?, ?, ?, ?, 'pending', ?, ?)
     ]], { targetType, targetId, targetName, liters, reward, expire })
 
-    notifyJob(_('order_new', targetName, liters))
+    notifyJob(L('order_new', targetName, liters))
     TriggerClientEvent('fuel_logistics:newOrder', -1, {
         id = id,
         target_name = targetName,
@@ -126,7 +126,7 @@ AddEventHandler('fuel_logistics:tryCompleteOrder', function(targetType, targetId
         end
 
         if xPlayer then
-            FL.Notify(xPlayer.source, _('order_done'), 'success')
+            FL.Notify(xPlayer.source, L('order_done'), 'success')
         end
     end
 end)

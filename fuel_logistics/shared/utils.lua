@@ -1,6 +1,6 @@
 FL = FL or {}
 
-function _(key, ...)
+function L(key, ...)
     local lang = Config.Locale or 'fr'
     local str = (Locales[lang] and Locales[lang][key]) or (Locales['en'] and Locales['en'][key]) or key
     if select('#', ...) > 0 then
@@ -25,7 +25,7 @@ function FL.HasPermission(permissions, perm)
 end
 
 function FL.GetGradePermissions(grade)
-    for _, g in ipairs(Config.Grades or {}) do
+    for _i, g in ipairs(Config.Grades or {}) do
         if g.grade == grade then
             return g.permissions or {}
         end

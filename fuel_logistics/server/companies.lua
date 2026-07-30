@@ -1,7 +1,7 @@
 function FL.LoadCompanies()
     FL.Companies = {}
     local rows = MySQL.query.await('SELECT * FROM fl_companies WHERE enabled = 1') or {}
-    for _, r in ipairs(rows) do
+    for _i, r in ipairs(rows) do
         FL.Companies[r.id] = {
             id = r.id,
             job_name = r.job_name,
@@ -21,7 +21,7 @@ end
 
 lib.callback.register('fuel_logistics:getCompanies', function(source)
     local list = {}
-    for _, c in pairs(FL.Companies) do
+    for _i, c in pairs(FL.Companies) do
         list[#list + 1] = {
             id = c.id,
             job_name = c.job_name,

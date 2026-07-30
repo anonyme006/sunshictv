@@ -1,11 +1,11 @@
 function OpenBossMenu()
-    if not CanPerm('boss') then return Notify(_('no_permission'), 'error') end
+    if not CanPerm('boss') then return Notify(L('no_permission'), 'error') end
 
     local stats = lib.callback.await('fuel_logistics:bossStats', false)
-    if not stats then return Notify(_('no_permission'), 'error') end
+    if not stats then return Notify(L('no_permission'), 'error') end
 
     local chartLines = {}
-    for _, row in ipairs(stats.chart or {}) do
+    for _i, row in ipairs(stats.chart or {}) do
         chartLines[#chartLines + 1] = ('%s : %d L · %d$'):format(row.day or '?', math.floor(row.liters or 0), math.floor(row.amount or 0))
     end
 
@@ -39,7 +39,7 @@ function OpenBossMenu()
                         menu = 'fl_boss_main',
                         options = (#chartLines > 0) and (function()
                             local opts = {}
-                            for _, line in ipairs(chartLines) do
+                            for _i, line in ipairs(chartLines) do
                                 opts[#opts + 1] = { title = line, icon = 'calendar-day' }
                             end
                             opts[#opts + 1] = { title = 'Retour', icon = 'arrow-left', menu = 'fl_boss_main' }
@@ -126,7 +126,7 @@ end
 
 function OpenBossHistory(rows)
     local opts = {}
-    for _, r in ipairs(rows) do
+    for _i, r in ipairs(rows) do
         opts[#opts + 1] = {
             title = ('[%s] %s'):format(r.type, r.target_name or r.player_name or '—'),
             description = ('%s L · %s$ · %s'):format(math.floor(r.liters or 0), r.amount or 0, r.created_at or ''),
@@ -141,7 +141,7 @@ end
 
 function OpenBossStations(stations)
     local opts = {}
-    for _, s in ipairs(stations) do
+    for _i, s in ipairs(stations) do
         local color = s.percent < 20 and '#f07178' or (s.percent < 50 and '#e6b35a' or '#3ecf8e')
         opts[#opts + 1] = {
             title = s.name,
@@ -159,7 +159,7 @@ end
 
 function OpenBossCompanies(companies)
     local opts = {}
-    for _, c in ipairs(companies) do
+    for _i, c in ipairs(companies) do
         opts[#opts + 1] = {
             title = c.label,
             description = ('%s · %d / %d L (%.1f%%)'):format(c.job_name, math.floor(c.level), c.capacity, c.percent),
@@ -175,7 +175,7 @@ end
 
 function OpenBossEmployees(stats)
     local opts = {}
-    for _, e in ipairs(stats.employees or {}) do
+    for _i, e in ipairs(stats.employees or {}) do
         opts[#opts + 1] = {
             title = e.name,
             description = e.grade_label or ('Grade ' .. tostring(e.grade)),
@@ -192,7 +192,7 @@ function OpenBossEmployees(stats)
                             icon = 'arrow-up-right-dots',
                             onSelect = function()
                                 local gradeOpts = {}
-                                for _, g in ipairs(stats.grades or {}) do
+                                for _i, g in ipairs(stats.grades or {}) do
                                     gradeOpts[#gradeOpts + 1] = { value = g.grade, label = g.label }
                                 end
                                 local input = lib.inputDialog('Grade', {

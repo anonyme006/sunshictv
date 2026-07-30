@@ -10,7 +10,7 @@ local busy = {}
 
 function FL.Notify(src, desc, nType)
     TriggerClientEvent('ox_lib:notify', src, {
-        title = _('notify_title'),
+        title = L('notify_title'),
         description = desc,
         type = nType or 'inform',
         position = 'top-right',
@@ -59,7 +59,7 @@ local function ensureJob()
         Config.JobName, Config.JobLabel
     })
     MySQL.query.await('DELETE FROM job_grades WHERE job_name = ?', { Config.JobName })
-    for _, g in ipairs(Config.Grades) do
+    for _i, g in ipairs(Config.Grades) do
         MySQL.insert.await(
             'INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, ?, ?, ?, ?, ?, ?)',
             { Config.JobName, g.grade, g.name, g.label, g.salary, '{}', '{}' }

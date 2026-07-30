@@ -28,7 +28,7 @@ function SpawnDeliveryTruck()
     TaskWarpPedIntoVehicle(PlayerPedId(), truck, -1)
     FL_C.Truck = truck
     SetModelAsNoLongerNeeded(model)
-    Notify(_('truck_spawned'), 'success')
+    Notify(L('truck_spawned'), 'success')
 end
 
 function StoreDeliveryTruck()
@@ -39,7 +39,7 @@ function StoreDeliveryTruck()
         DeleteVehicle(FL_C.Trailer)
     end
     FL_C.Truck, FL_C.Trailer = nil, nil
-    Notify(_('truck_stored'), 'success')
+    Notify(L('truck_stored'), 'success')
 end
 
 function LoadTruckMenu()
@@ -53,24 +53,24 @@ function LoadTruckMenu()
     if not input then return end
 
     local count = math.floor(tonumber(input[1]) or 0)
-    local ok = DoProgress(3500, _('progress_load'), Config.Delivery.anim)
-    if not ok then return Notify(_('cancelled'), 'inform') end
+    local ok = DoProgress(3500, L('progress_load'), Config.Delivery.anim)
+    if not ok then return Notify(L('cancelled'), 'inform') end
 
     local result = lib.callback.await('fuel_logistics:loadTruck', false, count)
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'missing' then Notify(_('missing_items'), 'error')
+        if err == 'missing' then Notify(L('missing_items'), 'error')
         elseif err == 'hose' then Notify('Il te faut un flexible (fuel_hose)', 'error')
         elseif err == 'full' then Notify('Citerne pleine', 'error')
-        else Notify(_('cancelled'), 'error') end
+        else Notify(L('cancelled'), 'error') end
         return
     end
 
-    Notify(_('loaded', result.load.barrels, result.load.liters), 'success')
+    Notify(L('loaded', result.load.barrels, result.load.liters), 'success')
 end
 
 function RefreshDeliveryTargets()
-    for _, zid in pairs(deliveryZones) do
+    for _i, zid in pairs(deliveryZones) do
         exports.ox_target:removeZone(zid)
     end
     deliveryZones = {}
@@ -84,7 +84,7 @@ function RefreshDeliveryTargets()
                 options = {{
                     name = 'fl_deliver_station_' .. id,
                     icon = 'fa-solid fa-gas-pump',
-                    label = _('target_deliver') .. ' — ' .. (s.name or 'Station'),
+                    label = L('target_deliver') .. ' — ' .. (s.name or 'Station'),
                     canInteract = function() return CanPerm('deliver') end,
                     onSelect = function()
                         DeliverMenu('station', tonumber(id) or s.id, s)
@@ -104,7 +104,7 @@ function RefreshDeliveryTargets()
                 options = {{
                     name = 'fl_deliver_company_' .. id,
                     icon = 'fa-solid fa-building',
-                    label = _('target_deliver') .. ' — ' .. (co.label or 'Entreprise'),
+                    label = L('target_deliver') .. ' — ' .. (co.label or 'Entreprise'),
                     canInteract = function() return CanPerm('deliver') end,
                     onSelect = function()
                         DeliverMenu('company', tonumber(id) or co.id, co)
@@ -119,7 +119,7 @@ end
 function DeliverMenu(targetType, targetId, target)
     local load = lib.callback.await('fuel_logistics:getLoad', false) or { liters = 0 }
     if (load.liters or 0) < 1 then
-        return Notify(_('not_enough_fuel'), 'error')
+        return Notify(L('not_enough_fuel'), 'error')
     end
 
     local capacity = target.capacity or 0
@@ -127,7 +127,7 @@ function DeliverMenu(targetType, targetId, target)
     local space = math.max(0, capacity - level)
     local maxDeliver = math.min(load.liters, space)
 
-    if maxDeliver < 1 then return Notify(_('station_full'), 'error') end
+    if maxDeliver < 1 then return Notify(L('station_full'), 'error') end
 
     local input = lib.inputDialog(target.name or target.label or 'Livraison', {
         {
@@ -141,8 +141,8 @@ function DeliverMenu(targetType, targetId, target)
     if not input then return end
 
     local liters = math.floor(tonumber(input[1]) or 0)
-    local ok = DoProgress(Config.Delivery.deliverDuration, _('progress_deliver'), Config.Delivery.anim)
-    if not ok then return Notify(_('cancelled'), 'inform') end
+    local ok = DoProgress(Config.Delivery.deliverDuration, L('progress_deliver'), Config.Delivery.anim)
+    if not ok then return Notify(L('cancelled'), 'inform') end
 
     local result
     if targetType == 'station' then
@@ -153,14 +153,14 @@ function DeliverMenu(targetType, targetId, target)
 
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'full' then Notify(_('station_full'), 'error')
-        elseif err == 'fuel' then Notify(_('not_enough_fuel'), 'error')
+        if err == 'full' then Notify(L('station_full'), 'error')
+        elseif err == 'fuel' then Notify(L('not_enough_fuel'), 'error')
         elseif err == 'distance' then Notify('Trop loin', 'error')
-        else Notify(_('cancelled'), 'error') end
+        else Notify(L('cancelled'), 'error') end
         return
     end
 
-    Notify(_('delivered', result.liters, result.payment), 'success')
+    Notify(L('delivered', result.liters, result.payment), 'success')
     if FL_C.Stations[tostring(targetId)] then
         FL_C.Stations[tostring(targetId)].level = result.level
     end
