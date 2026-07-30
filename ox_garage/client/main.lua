@@ -24,11 +24,50 @@ function GetGarageById(id)
     end
 end
 
-function IsNearGarageStore(garage)
-    local ped = PlayerPedId()
-    local coords = GetEntityCoords(ped)
-    local store = garage.store or { coords = garage.coords, radius = Config.StoreDistance }
+function GetGarageStoreInfo(garage)
+    return garage.store or { coords = garage.coords, radius = Config.StoreDistance }
+end
+
+function IsCoordsNearGarageStore(coords, garage)
+    local store = GetGarageStoreInfo(garage)
+    if not store.coords then return false end
     return #(coords - store.coords) <= (store.radius or Config.StoreDistance)
+end
+
+function IsNearGarageStore(garage)
+    return IsCoordsNearGarageStore(GetEntityCoords(PlayerPedId()), garage)
+end
+
+function IsVehicleNearGarageStore(veh, garage)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    return IsCoordsNearGarageStore(GetEntityCoords(veh), garage)
+end
+
+--- Garage dont le point de rangement couvre ce véhicule
+function GetStoreGarageForVehicle(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return nil end
+    local vCoords = GetEntityCoords(veh)
+    for _i, garage in ipairs(Config.Garages) do
+        if IsCoordsNearGarageStore(vCoords, garage) then
+            return garage
+        end
+    end
+    return nil
+end
+
+--- Véhicule le plus proche sur le point de rangement
+function GetClosestVehicleAtStore(garage, maxDist)
+    local store = GetGarageStoreInfo(garage)
+    if not store.coords then return nil end
+    maxDist = maxDist or (store.radius or Config.StoreDistance)
+    local best, bestDist
+    for _i, veh in ipairs(GetGamePool('CVehicle')) do
+        local d = #(GetEntityCoords(veh) - store.coords)
+        if d <= maxDist and (not bestDist or d < bestDist) then
+            best, bestDist = veh, d
+        end
+    end
+    return best
 end
 
 function PlayerInOwnedVehicle()
@@ -149,10 +188,13 @@ local function registerStoreZone(garage)
                 label = L('target_store'),
                 distance = 3.5,
                 canInteract = function()
-                    return PlayerInOwnedVehicle() ~= nil and IsNearGarageStore(garage)
+                    if not IsNearGarageStore(garage) then return false end
+                    if PlayerInOwnedVehicle() then return true end
+                    return GetClosestVehicleAtStore(garage) ~= nil
                 end,
                 onSelect = function()
-                    OpenStoreMenu(garage.id)
+                    local veh = PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+                    OpenStoreMenu(garage.id, veh)
                 end,
             },
         },
@@ -239,4 +281,36 @@ CreateThread(function()
 
         Wait(sleep)
     end
+end)
+
+--- Target sur le véhicule au point de rangement (à pied ou dedans)
+CreateThread(function()
+    exports.ox_target:addGlobalVehicle({
+        {
+            name = 'ox_garage_store_on_vehicle',
+            icon = 'fa-solid fa-square-parking',
+            label = L('target_store_vehicle'),
+            distance = 3.0,
+            canInteract = function(entity)
+                if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+                local garage = GetStoreGarageForVehicle(entity)
+                if not garage then return false end
+                -- Joueur proche du point OU du véhicule (après être descendu)
+                local pedCoords = GetEntityCoords(PlayerPedId())
+                local nearStore = IsNearGarageStore(garage)
+                local nearVeh = #(pedCoords - GetEntityCoords(entity)) <= 4.0
+                return nearStore or (nearVeh and IsVehicleNearGarageStore(entity, garage))
+            end,
+            onSelect = function(data)
+                local veh = data.entity
+                if not veh or not DoesEntityExist(veh) then return end
+                local garage = GetStoreGarageForVehicle(veh)
+                if not garage then
+                    Notify(L('notify_too_far'), 'error')
+                    return
+                end
+                OpenStoreMenu(garage.id, veh)
+            end,
+        },
+    })
 end)

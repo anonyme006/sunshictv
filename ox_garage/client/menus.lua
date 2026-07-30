@@ -341,20 +341,34 @@ function OpenVehicleInfoMenu(garageId, vehicle)
     lib.showContext('ox_garage_info_' .. garageId)
 end
 
---- Menu rangement (assis dans le véhicule)
-function OpenStoreMenu(garageId)
+--- Menu rangement (dans le véhicule OU target dessus au point)
+function OpenStoreMenu(garageId, veh)
     local garage = GetGarageById(garageId)
     if not garage then return end
 
-    local veh = PlayerInOwnedVehicle()
-    if not veh then
-        Notify(L('notify_not_in_vehicle'), 'error')
+    if garage.kind == 'private' then
+        local info = lib.callback.await('ox_garage:getPrivateInfo', false, garageId)
+        if not info or not info.owned then
+            OpenPrivateAccessMenu(garageId, info)
+            return
+        end
+    end
+
+    veh = veh or PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+    if not veh or not DoesEntityExist(veh) then
+        Notify(L('notify_no_vehicle_store'), 'error')
+        return
+    end
+
+    if not IsVehicleNearGarageStore(veh, garage) and not IsNearGarageStore(garage) then
+        Notify(L('notify_too_far'), 'error')
         return
     end
 
     local plate = GetVehicleNumberPlateText(veh)
     local model = GetEntityModel(veh)
     local name = GetVehicleDisplayName(model)
+    local inVeh = IsPedInVehicle(PlayerPedId(), veh, false)
 
     lib.registerContext({
         id = 'ox_garage_store_' .. garageId,
@@ -372,9 +386,11 @@ function OpenStoreMenu(garageId)
                 iconColor = Config.StatusColors.out,
             },
             {
-                title = L('store_vehicle'),
-                description = 'Sauvegarder et ranger dans ' .. garage.label,
-                icon = 'square-parking',
+                title = inVeh and L('store_exit_and_store') or L('store_vehicle'),
+                description = inVeh
+                    and L('store_exit_and_store_desc', garage.label)
+                    or L('store_vehicle_desc', garage.label),
+                icon = inVeh and 'person-walking-arrow-right' or 'square-parking',
                 iconColor = Config.StatusColors.stored,
                 onSelect = function()
                     StoreVehicle(garageId, veh)
@@ -470,17 +486,32 @@ function TakeOutVehicle(garageId, vehicle)
     -- Fermeture auto : pas de menu réouvert
 end
 
---- Ranger
+--- Ranger (descend d'abord si encore assis)
 function StoreVehicle(garageId, veh)
     local garage = GetGarageById(garageId)
     if not garage then return end
     if not veh or not DoesEntityExist(veh) then
-        Notify(L('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_no_vehicle_store'), 'error')
         return
     end
 
-    if not IsNearGarageStore(garage) then
+    if not IsVehicleNearGarageStore(veh, garage) and not IsNearGarageStore(garage) then
         Notify(L('notify_too_far'), 'error')
+        return
+    end
+
+    local ped = PlayerPedId()
+    if IsPedInVehicle(ped, veh, false) then
+        TaskLeaveVehicle(ped, veh, 16)
+        local timeout = GetGameTimer() + 4000
+        while IsPedInVehicle(ped, veh, false) and GetGameTimer() < timeout do
+            Wait(100)
+        end
+        Wait(400)
+    end
+
+    if not DoesEntityExist(veh) then
+        Notify(L('notify_error'), 'error')
         return
     end
 
@@ -507,9 +538,14 @@ function StoreVehicle(garageId, veh)
         return
     end
 
+    -- Re-check distance après la progress (véhicule doit rester sur le point)
+    if not IsVehicleNearGarageStore(veh, garage) then
+        Notify(L('notify_too_far'), 'error')
+        return
+    end
+
     local props = GetVehicleProps(veh)
     local netId = NetworkGetNetworkIdFromEntity(veh)
-    local plate = props.plate or GetVehicleNumberPlateText(veh)
     local name = GetVehicleDisplayName(GetEntityModel(veh))
 
     local result = lib.callback.await('ox_garage:store', false, garageId, netId, props)
@@ -526,8 +562,6 @@ function StoreVehicle(garageId, veh)
         return
     end
 
-    TaskLeaveVehicle(PlayerPedId(), veh, 16)
-    Wait(800)
     if DoesEntityExist(veh) then
         SetEntityAsMissionEntity(veh, true, true)
         DeleteVehicle(veh)
