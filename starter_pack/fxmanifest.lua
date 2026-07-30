@@ -33,3 +33,9 @@ dependencies {
     'es_extended',
     'oxmysql',
 }
+
+-- Optionnel : ox_target (rangement BMX), ox_lib (progress), ox_inventory
+-- ensure ox_target
+-- ensure ox_lib
+-- ensure ox_inventory
+

@@ -3,6 +3,13 @@ local ESX = exports['es_extended']:getSharedObject()
 ---@type table<number, boolean>
 local spinning = {}
 
+--- BMX sortis : src -> { [netId] = true }
+---@type table<number, table<number, boolean>>
+local spawnedBmx = {}
+
+---@type table<number, boolean>
+local storing = {}
+
 ---@param identifier string
 ---@return boolean
 local function hasReceivedKit(identifier)
@@ -25,6 +32,35 @@ end
 ---@param msg string
 local function notify(src, msg)
     TriggerClientEvent('esx:showNotification', src, msg)
+end
+
+local function addInventoryItem(xPlayer, src, item, count)
+    if Config.Inventory == 'ox' and GetResourceState('ox_inventory') == 'started' then
+        if exports.ox_inventory:CanCarryItem(src, item, count) == false then
+            return false
+        end
+        return exports.ox_inventory:AddItem(src, item, count) and true or false
+    end
+
+    if xPlayer.canCarryItem and not xPlayer.canCarryItem(item, count) then
+        return false
+    end
+    xPlayer.addInventoryItem(item, count)
+    return true
+end
+
+local function removeInventoryItem(xPlayer, src, item, count)
+    if Config.Inventory == 'ox' and GetResourceState('ox_inventory') == 'started' then
+        local have = exports.ox_inventory:GetItemCount(src, item) or 0
+        if have < count then return false end
+        return exports.ox_inventory:RemoveItem(src, item, count) and true or false
+    end
+    local inv = xPlayer.getInventoryItem(item)
+    if not inv or (inv.count or 0) < count then
+        return false
+    end
+    xPlayer.removeInventoryItem(item, count)
+    return true
 end
 
 ---@param xPlayer table
@@ -126,7 +162,13 @@ CreateThread(function()
         end
 
         local item = xPlayer.getInventoryItem(Config.ChanceCard.item)
-        if not item or (item.count or 0) < 1 then
+        if Config.Inventory == 'ox' and GetResourceState('ox_inventory') == 'started' then
+            local count = exports.ox_inventory:GetItemCount(src, Config.ChanceCard.item) or 0
+            if count < 1 then
+                notify(src, Config.Locale.no_card)
+                return
+            end
+        elseif not item or (item.count or 0) < 1 then
             notify(src, Config.Locale.no_card)
             return
         end
@@ -136,19 +178,92 @@ CreateThread(function()
     end)
 
     --- Item BMX → spawn véhicule
-    ESX.RegisterUsableItem('bmx', function(source)
+    local bmxItem = Config.BmxItem or 'bmx'
+    ESX.RegisterUsableItem(bmxItem, function(source)
         local src = source
         local xPlayer = ESX.GetPlayerFromId(src)
         if not xPlayer then return end
 
-        local item = xPlayer.getInventoryItem('bmx')
-        if not item or (item.count or 0) < 1 then
+        if not removeInventoryItem(xPlayer, src, bmxItem, 1) then
             return
         end
 
-        xPlayer.removeInventoryItem('bmx', 1)
         TriggerClientEvent('starter_pack:spawnBmx', src)
     end)
+end)
+
+--- Enregistre un BMX spawné (anti-dupe au rangement)
+RegisterNetEvent('starter_pack:registerBmx', function(netId)
+    local src = source
+    netId = tonumber(netId)
+    if not netId then return end
+    spawnedBmx[src] = spawnedBmx[src] or {}
+    spawnedBmx[src][netId] = true
+end)
+
+--- Ranger le BMX → item inventaire
+RegisterNetEvent('starter_pack:storeBmx', function(netId)
+    local src = source
+    local xPlayer = ESX.GetPlayerFromId(src)
+    netId = tonumber(netId)
+
+    local function respond(payload)
+        TriggerClientEvent('starter_pack:storeBmxResult', src, payload, netId)
+    end
+
+    if not xPlayer or not netId then
+        return respond({ ok = false, error = 'invalid' })
+    end
+
+    if storing[src] then
+        return respond({ ok = false, error = 'busy' })
+    end
+
+    -- Vérifie que ce BMX vient du starter_pack
+    local owned = spawnedBmx[src] and spawnedBmx[src][netId]
+    local entity = NetworkGetEntityFromNetworkId(netId)
+    local stateOk = false
+
+    if entity and entity ~= 0 and DoesEntityExist(entity) then
+        local ped = GetPlayerPed(src)
+        local dist = #(GetEntityCoords(ped) - GetEntityCoords(entity))
+        local maxDist = (Config.BmxTarget and Config.BmxTarget.distance or 2.5) + 3.0
+        if dist > maxDist then
+            return respond({ ok = false, error = 'distance' })
+        end
+
+        if GetEntityModel(entity) ~= Config.BmxModel then
+            return respond({ ok = false, error = 'invalid' })
+        end
+
+        local st = Entity(entity).state
+        stateOk = st and st.starter_pack_bmx == true
+    end
+
+    if not owned and not stateOk then
+        return respond({ ok = false, error = 'invalid' })
+    end
+
+    storing[src] = true
+
+    local item = Config.BmxItem or 'bmx'
+    local added = addInventoryItem(xPlayer, src, item, 1)
+    if not added then
+        storing[src] = nil
+        return respond({ ok = false, error = 'inventory' })
+    end
+
+    if spawnedBmx[src] then
+        spawnedBmx[src][netId] = nil
+    end
+
+    -- Supprime l'entité côté serveur si possible
+    if entity and entity ~= 0 and DoesEntityExist(entity) then
+        DeleteEntity(entity)
+    end
+
+    storing[src] = nil
+    respond({ ok = true })
 end)
 
 --- Résultat du spin (validé côté serveur)
@@ -161,15 +276,23 @@ RegisterNetEvent('starter_pack:claimSpin', function()
         return
     end
 
-    local item = xPlayer.getInventoryItem(Config.ChanceCard.item)
-    if not item or (item.count or 0) < 1 then
+    local cardItem = Config.ChanceCard.item
+    local hasCard = false
+    if Config.Inventory == 'ox' and GetResourceState('ox_inventory') == 'started' then
+        hasCard = (exports.ox_inventory:GetItemCount(src, cardItem) or 0) >= 1
+    else
+        local item = xPlayer.getInventoryItem(cardItem)
+        hasCard = item and (item.count or 0) >= 1
+    end
+
+    if not hasCard then
         spinning[src] = nil
         notify(src, Config.Locale.no_card)
         TriggerClientEvent('starter_pack:spinResult', src, { success = false, amount = 0, error = true })
         return
     end
 
-    xPlayer.removeInventoryItem(Config.ChanceCard.item, 1)
+    removeInventoryItem(xPlayer, src, cardItem, 1)
 
     local amount = rollReward()
     local success = amount > 0
@@ -197,7 +320,10 @@ RegisterNetEvent('starter_pack:cancelSpin', function()
 end)
 
 AddEventHandler('playerDropped', function()
-    spinning[source] = nil
+    local src = source
+    spinning[src] = nil
+    storing[src] = nil
+    spawnedBmx[src] = nil
 end)
 
 ESX.RegisterCommand('givekit', 'admin', function(xPlayer)

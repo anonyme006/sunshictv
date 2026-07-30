@@ -49,6 +49,28 @@ Fichier `config.lua` :
 
 L'item **BMX** est utilisable : il spawn un vélo à côté du joueur et se consomme.
 
+### Ranger le BMX (ox_target)
+
+Avec `ox_target` démarré et `Config.BmxTarget.enabled = true` :
+
+1. Utilise l'item `bmx` → le vélo apparaît
+2. Vise le BMX → **Ranger dans l'inventaire**
+3. Le véhicule est supprimé et l'item `bmx` est rendu
+
+Seuls les BMX spawnés par le starter_pack sont rangeables (state bag `starter_pack_bmx`).
+
+```lua
+Config.BmxTarget = {
+    enabled = true,
+    label = 'Ranger dans l\'inventaire',
+    icon = 'fa-solid fa-box',
+    distance = 2.5,
+    progress = 1500,
+}
+Config.Inventory = 'esx' -- ou 'ox'
+```
+
+
 ## Commande admin
 
 ```

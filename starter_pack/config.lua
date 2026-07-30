@@ -29,7 +29,21 @@ Config.StarterItems = {
 -- false = le BMX se spawn quand le joueur utilise l'item `bmx`
 Config.SpawnBmxVehicle = false
 Config.BmxModel = `bmx`
+Config.BmxItem = 'bmx'
 Config.BmxSpawnOffset = { x = 2.0, y = 0.0, z = 0.0 }
+
+-- Ranger le BMX via ox_target → retourne l'item dans l'inventaire
+Config.BmxTarget = {
+    enabled = true,
+    label = 'Ranger dans l\'inventaire',
+    icon = 'fa-solid fa-box',
+    distance = 2.5,
+    -- Progress bar (ms) — 0 pour désactiver
+    progress = 1500,
+}
+
+-- Inventaire : 'esx' | 'ox'
+Config.Inventory = 'esx'
 
 --[[
     Carte Chance — spin NUI
@@ -72,4 +86,10 @@ Config.Locale = {
     spin_fail = 'Pas de chance… La carte n\'a rien donné cette fois.',
     no_card = 'Tu n\'as pas de Carte Chance.',
     already_spinning = 'Tirage déjà en cours…',
+    bmx_spawned = 'Ton BMX t\'attend à côté de toi.',
+    bmx_stored = 'BMX rangé dans ton inventaire.',
+    bmx_inventory_full = 'Inventaire plein, impossible de ranger le BMX.',
+    bmx_busy = 'Action déjà en cours…',
+    bmx_cancelled = 'Annulé.',
+    bmx_invalid = 'Ce BMX ne peut pas être rangé.',
 }
