@@ -55,6 +55,12 @@ function FL.GetLevelsPayload()
 end
 
 lib.callback.register('fuel_logistics:getStations', function(source)
+    local xPlayer = FL.GetPlayer(source)
+    if not FL.IsJob(xPlayer) and not FL.IsAdmin(xPlayer) then
+        return {}
+    end
+
+    -- Toujours depuis la mémoire à jour (inclut stations créées à chaud)
     local list = {}
     for _, s in pairs(FL.Stations) do
         list[#list + 1] = {
@@ -70,3 +76,8 @@ lib.callback.register('fuel_logistics:getStations', function(source)
     table.sort(list, function(a, b) return a.name < b.name end)
     return list
 end)
+
+--- Broadcast dédié niveaux (pour clients qui ont le menu live)
+function FL.PushLevels()
+    TriggerClientEvent('fuel_logistics:updateLevels', -1, FL.GetLevelsPayload())
+end

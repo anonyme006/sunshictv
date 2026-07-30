@@ -41,6 +41,11 @@ ensure fuel_logistics
 | `/fuelboss` | Patron | Menu boss ox_lib |
 | `/fladmin` | Admin | Créer / éditer stations & cuves |
 | `/florders` | Employés | Commandes automatiques |
+| `/flstations` | Employés | **Niveaux live de toutes les stations** |
+
+Le menu `/flstations` affiche litres / capacité / % en direct (couleur vert → jaune → rouge).  
+Les stations créées avec `/fladmin` apparaissent automatiquement dans la liste (sans restart).  
+Aussi accessible via ox_target au QG (« Tableau des stations ») et depuis le menu patron.
 
 ## Admin in-game
 

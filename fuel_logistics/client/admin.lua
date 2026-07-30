@@ -60,6 +60,11 @@ function CreateStationHere()
 
     if result and result.ok then
         Notify(_('station_created'), 'success')
+        -- Ouvre le tableau live pour voir la nouvelle station
+        Wait(300)
+        if IsFuelJob() then
+            OpenStationsLiveMenu(true)
+        end
     else
         Notify(_('no_permission'), 'error')
     end

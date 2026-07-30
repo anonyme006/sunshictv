@@ -25,6 +25,7 @@ client_scripts {
     'client/boss.lua',
     'client/admin.lua',
     'client/orders.lua',
+    'client/stations_menu.lua',
 }
 
 server_scripts {

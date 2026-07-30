@@ -56,11 +56,11 @@ function OpenBossMenu()
                 onSelect = function() OpenBossHistory(stats.recent or {}) end,
             },
             {
-                title = 'Stations',
-                description = (#(stats.stations or {})) .. ' stations',
+                title = 'Stations (live)',
+                description = (#(stats.stations or {})) .. ' stations — niveaux en direct',
                 icon = 'gas-pump',
                 arrow = true,
-                onSelect = function() OpenBossStations(stats.stations or {}) end,
+                onSelect = function() OpenStationsLiveMenu() end,
             },
             {
                 title = 'Entreprises clientes',

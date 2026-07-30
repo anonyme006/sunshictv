@@ -165,13 +165,22 @@ function SetupStaticTargets()
     exports.ox_target:addSphereZone({
         coords = Config.BossMenu.coords,
         radius = Config.BossMenu.radius or 1.5,
-        options = {{
-            name = 'fl_boss',
-            icon = 'fa-solid fa-briefcase',
-            label = _('target_boss'),
-            canInteract = function() return CanPerm('boss') end,
-            onSelect = function() OpenBossMenu() end,
-        }},
+        options = {
+            {
+                name = 'fl_boss',
+                icon = 'fa-solid fa-briefcase',
+                label = _('target_boss'),
+                canInteract = function() return CanPerm('boss') end,
+                onSelect = function() OpenBossMenu() end,
+            },
+            {
+                name = 'fl_stations_board',
+                icon = 'fa-solid fa-gauge-high',
+                label = 'Tableau des stations',
+                canInteract = function() return IsFuelJob() end,
+                onSelect = function() OpenStationsLiveMenu() end,
+            },
+        },
     })
 
     -- Garage truck

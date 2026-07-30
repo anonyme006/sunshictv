@@ -36,6 +36,14 @@ lib.callback.register('fuel_logistics:adminCreateStation', function(source, data
     FL.LoadStations()
     FL.BroadcastStations()
     FL.Log(('Station créée #%s par %s'):format(id, xPlayer.getName and xPlayer.getName() or source))
+
+    -- Notifie les employés qu'une station a été ajoutée
+    local xPlayers = FL.ESX.GetExtendedPlayers and FL.ESX.GetExtendedPlayers('job', Config.JobName) or {}
+    for _, xp in pairs(xPlayers) do
+        FL.Notify(xp.source, ('Nouvelle station : %s'):format(data.name), 'inform')
+        TriggerClientEvent('fuel_logistics:stationCreated', xp.source, { id = id, name = data.name })
+    end
+
     return { ok = true, id = id }
 end)
 
