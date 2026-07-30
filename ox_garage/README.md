@@ -77,6 +77,20 @@ exports.ox_garage:ImpoundVehicle(plate, 'impound_public', props)
 exports.ox_garage:OpenImpound('impound_mechanic')
 ```
 
+### Remise fourrière (bug / déco) — admin
+
+```
+/impoundfix [plaque] [fourrière?]   → 1 véhicule sorti → fourrière
+/impoundfixall [fourrière?]         → tous les stored=0 → fourrière
+```
+
+Défaut : `impound_public`. Supprime aussi l’entité monde si encore spawnée.
+
+```lua
+exports.ox_garage:ForceImpoundPlate('ABC123', 'impound_public')
+exports.ox_garage:ForceImpoundAllOut('impound_public')
+```
+
 ## Installation
 
 ```cfg

@@ -294,6 +294,19 @@ Config.Impound = {
     enabled = true,
     progressDuration = 3500,
     payAccount = 'bank',
+
+    --[[
+        Remise en fourrière des véhicules "sortis" (bug / déco)
+        /impoundfix [plaque]
+        /impoundfixall [impound_public|impound_mechanic]
+    ]]
+    fix = {
+        enabled = true,
+        defaultImpound = 'impound_public',
+        adminGroups = { admin = true, superadmin = true, god = true },
+        -- Supprimer aussi l'entité monde si encore spawnée
+        deleteWorldEntity = true,
+    },
 }
 
 Config.Impounds = {

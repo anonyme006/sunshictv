@@ -335,4 +335,167 @@ end)
 exports('GetImpoundById', GetImpoundById)
 exports('IsImpoundGarageId', IsImpoundGarageId)
 
+---------------------------------------------------------------------------
+-- Remise en fourrière admin (véhicules sortis / bug / déco)
+---------------------------------------------------------------------------
+
+local function isImpoundAdmin(xPlayer)
+    if not xPlayer then return false end
+    local fix = Config.Impound and Config.Impound.fix
+    local groups = (fix and fix.adminGroups) or { admin = true, superadmin = true }
+    local group = xPlayer.getGroup and xPlayer.getGroup() or 'user'
+    if groups[group] then return true end
+    return IsPlayerAceAllowed(xPlayer.source, 'command.impoundfix')
+end
+
+local function deleteWorldVehicleByPlate(plate)
+    plate = normalizePlate(plate)
+    local netId = ClearSpawnedByPlate and ClearSpawnedByPlate(plate) or nil
+    if netId then
+        local ent = NetworkGetEntityFromNetworkId(netId)
+        if ent and ent ~= 0 and DoesEntityExist(ent) then
+            DeleteEntity(ent)
+        end
+    end
+
+    -- Scan monde (OneSync)
+    local vehicles = GetAllVehicles and GetAllVehicles() or {}
+    for i = 1, #vehicles do
+        local veh = vehicles[i]
+        if veh and DoesEntityExist(veh) then
+            local p = normalizePlate(GetVehicleNumberPlateText(veh))
+            if p == plate then
+                DeleteEntity(veh)
+            end
+        end
+    end
+end
+
+---@param plate string
+---@param impoundId string
+---@return boolean ok, string|nil error, table|nil row
+local function forceImpoundPlate(plate, impoundId)
+    plate = normalizePlate(plate)
+    local impound = GetImpoundById(impoundId)
+    if not impound then return false, 'bad_impound' end
+
+    local tbl = Config.Columns.table
+    local plateCol = Config.Columns.plate
+    local storedCol = Config.Columns.stored
+    local garageCol = Config.Columns.garage
+
+    local row = MySQL.single.await(
+        ('SELECT * FROM `%s` WHERE REPLACE(UPPER(`%s`), " ", "") = ?'):format(tbl, plateCol),
+        { plate }
+    )
+    if not row then return false, 'not_found' end
+
+    local already = (row[garageCol] or '') == impoundId
+        and (row[storedCol] == 1 or row[storedCol] == true or row[storedCol] == '1')
+    if already then
+        return false, 'already'
+    end
+
+    MySQL.update.await(
+        ('UPDATE `%s` SET `%s` = 1, `%s` = ? WHERE REPLACE(UPPER(`%s`), " ", "") = ?'):format(
+            tbl, storedCol, garageCol, plateCol
+        ),
+        { impoundId, plate }
+    )
+
+    local fix = Config.Impound and Config.Impound.fix
+    if not fix or fix.deleteWorldEntity ~= false then
+        deleteWorldVehicleByPlate(plate)
+    else
+        if ClearSpawnedByPlate then ClearSpawnedByPlate(plate) end
+    end
+
+    return true, nil, row
+end
+
+---@param impoundId string
+---@return number count, table plates
+local function forceImpoundAllOut(impoundId)
+    local impound = GetImpoundById(impoundId)
+    if not impound then return 0, {} end
+
+    local tbl = Config.Columns.table
+    local plateCol = Config.Columns.plate
+    local storedCol = Config.Columns.stored
+    local garageCol = Config.Columns.garage
+
+    -- Véhicules sortis (stored = 0) ou parking fourrière mais sortis
+    local rows = MySQL.query.await(([[
+        SELECT `%s` AS plate, `%s` AS parking, `%s` AS stored
+        FROM `%s`
+        WHERE `%s` = 0 OR `%s` = false OR `%s` = '0'
+    ]]):format(plateCol, garageCol, storedCol, tbl, storedCol, storedCol, storedCol)) or {}
+
+    local plates = {}
+    for _, row in ipairs(rows) do
+        local plate = normalizePlate(row.plate)
+        local ok = forceImpoundPlate(plate, impoundId)
+        if ok then
+            plates[#plates + 1] = plate
+        end
+    end
+
+    return #plates, plates
+end
+
+lib.callback.register('ox_garage:adminImpoundFix', function(source, payload)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    if not isImpoundAdmin(xPlayer) then
+        return { ok = false, error = 'no_perm' }
+    end
+
+    if not Config.Impound or not Config.Impound.enabled then
+        return { ok = false, error = 'disabled' }
+    end
+
+    local fix = Config.Impound.fix
+    if fix and fix.enabled == false then
+        return { ok = false, error = 'disabled' }
+    end
+
+    payload = payload or {}
+    local impoundId = payload.impoundId
+        or (fix and fix.defaultImpound)
+        or 'impound_public'
+
+    if not GetImpoundById(impoundId) then
+        return { ok = false, error = 'bad_impound' }
+    end
+
+    if payload.all then
+        local count, plates = forceImpoundAllOut(impoundId)
+        return { ok = true, count = count, plates = plates, impoundId = impoundId }
+    end
+
+    local plate = payload.plate
+    if type(plate) ~= 'string' or plate == '' then
+        return { ok = false, error = 'need_plate' }
+    end
+
+    local ok, err = forceImpoundPlate(plate, impoundId)
+    if not ok then
+        return { ok = false, error = err or 'error' }
+    end
+
+    return { ok = true, count = 1, plates = { normalizePlate(plate) }, impoundId = impoundId }
+end)
+
+exports('ForceImpoundPlate', function(plate, impoundId)
+    local fix = Config.Impound and Config.Impound.fix
+    impoundId = impoundId or (fix and fix.defaultImpound) or 'impound_public'
+    local ok, err = forceImpoundPlate(plate, impoundId)
+    return ok, err
+end)
+
+exports('ForceImpoundAllOut', function(impoundId)
+    local fix = Config.Impound and Config.Impound.fix
+    impoundId = impoundId or (fix and fix.defaultImpound) or 'impound_public'
+    return forceImpoundAllOut(impoundId)
+end)
+
 print('^2[ox_garage]^0 module fourrière chargé.')

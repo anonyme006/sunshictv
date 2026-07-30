@@ -331,3 +331,103 @@ CreateThread(function()
 end)
 
 exports('OpenImpound', OpenImpoundMenu)
+
+---------------------------------------------------------------------------
+-- Admin : remettre véhicules sortis (bug / déco) en fourrière
+---------------------------------------------------------------------------
+
+local function impoundFixOptions()
+    local options = {}
+    for _i, imp in ipairs(Config.Impounds or {}) do
+        options[#options + 1] = { value = imp.id, label = ('%s (%s)'):format(imp.label, imp.id) }
+    end
+    if #options == 0 then
+        options[1] = { value = 'impound_public', label = 'impound_public' }
+    end
+    return options
+end
+
+local function notifyFixResult(result)
+    if not result or not result.ok then
+        local err = result and result.error
+        local map = {
+            no_perm = L('impound_fix_no_perm'),
+            disabled = L('notify_impound_disabled'),
+            bad_impound = L('impound_fix_bad'),
+            need_plate = L('impound_fix_need_plate'),
+            not_found = L('impound_fix_not_found'),
+            already = L('notify_already_impound'),
+        }
+        Notify(map[err] or L('notify_error'), 'error')
+        return
+    end
+
+    Notify(L('impound_fix_done', result.count or 0, result.impoundId or ''), 'success')
+end
+
+RegisterCommand('impoundfix', function(_, args)
+    local plate = args[1]
+    local impoundId = args[2]
+
+    if not plate or plate == '' then
+        local input = lib.inputDialog(L('impound_fix_title'), {
+            { type = 'input', label = L('impound_fix_plate'), required = true, placeholder = 'ABC123' },
+            {
+                type = 'select',
+                label = L('impound_fix_select'),
+                options = impoundFixOptions(),
+                required = true,
+                default = (Config.Impound.fix and Config.Impound.fix.defaultImpound) or 'impound_public',
+            },
+        })
+        if not input then return end
+        plate = input[1]
+        impoundId = input[2]
+    end
+
+    local result = lib.callback.await('ox_garage:adminImpoundFix', false, {
+        plate = plate,
+        impoundId = impoundId,
+        all = false,
+    })
+    notifyFixResult(result)
+end, false)
+
+RegisterCommand('impoundfixall', function(_, args)
+    local impoundId = args[1]
+    if not impoundId or impoundId == '' then
+        local input = lib.inputDialog(L('impound_fixall_title'), {
+            {
+                type = 'select',
+                label = L('impound_fix_select'),
+                options = impoundFixOptions(),
+                required = true,
+                default = (Config.Impound.fix and Config.Impound.fix.defaultImpound) or 'impound_public',
+            },
+            {
+                type = 'checkbox',
+                label = L('impound_fixall_confirm'),
+                checked = false,
+            },
+        })
+        if not input or not input[2] then
+            Notify(L('impound_fixall_cancelled'), 'inform')
+            return
+        end
+        impoundId = input[1]
+    end
+
+    local result = lib.callback.await('ox_garage:adminImpoundFix', false, {
+        all = true,
+        impoundId = impoundId,
+    })
+    notifyFixResult(result)
+end, false)
+
+TriggerEvent('chat:addSuggestion', '/impoundfix', 'Remettre un véhicule sorti (bug/déco) en fourrière', {
+    { name = 'plaque', help = 'Plaque du véhicule (sinon formulaire)' },
+    { name = 'fourrière', help = 'impound_public | impound_mechanic (optionnel)' },
+})
+TriggerEvent('chat:addSuggestion', '/impoundfixall', 'Remettre TOUS les véhicules sortis en fourrière', {
+    { name = 'fourrière', help = 'impound_public | impound_mechanic (optionnel)' },
+})

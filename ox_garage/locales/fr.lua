@@ -62,6 +62,18 @@ Locales['fr'] = {
     notify_already_impound = 'Ce véhicule est déjà en fourrière.',
     notify_not_impound = 'Ce véhicule n\'est pas dans cette fourrière.',
     notify_impound_disabled = 'Fourrière désactivée.',
+    -- Remise fourrière admin
+    impound_fix_title = 'Remise en fourrière',
+    impound_fixall_title = 'Remise TOUS les sortis en fourrière',
+    impound_fix_plate = 'Plaque',
+    impound_fix_select = 'Fourrière cible',
+    impound_fixall_confirm = 'Je confirme (tous les stored=0)',
+    impound_fixall_cancelled = 'Annulé.',
+    impound_fix_done = '%s véhicule(s) remis en fourrière (%s).',
+    impound_fix_no_perm = 'Permission refusée.',
+    impound_fix_bad = 'Fourrière invalide.',
+    impound_fix_need_plate = 'Plaque requise.',
+    impound_fix_not_found = 'Véhicule introuvable en base.',
     -- Garages privés
     private_menu_title = '%s',
     private_buy = 'Acheter l\'accès (%s)',

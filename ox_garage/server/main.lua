@@ -300,6 +300,16 @@ RegisterNetEvent('ox_garage:registerSpawn', function(plate, netId)
     spawnedByPlate[normalizePlate(plate)] = netId
 end)
 
+--- Nettoie le tracking spawn (utilisé par remise fourrière admin)
+function ClearSpawnedByPlate(plate)
+    plate = normalizePlate(plate)
+    local netId = spawnedByPlate[plate]
+    spawnedByPlate[plate] = nil
+    return netId
+end
+
+exports('ClearSpawnedByPlate', ClearSpawnedByPlate)
+
 --- Rollback si spawn annulé / échoué
 RegisterNetEvent('ox_garage:forceStore', function(plate, garageId)
     local src = source
