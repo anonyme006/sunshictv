@@ -4,7 +4,7 @@ lua54 'yes'
 
 name 'ox_garage'
 author 'sunshictv'
-description 'Garage moderne ox_lib + ox_target — menus context, états véhicule, spawn/store'
+description 'Garage moderne ox_lib + ox_target — perso, entreprise, fourrière générale & mécano'
 version '1.0.0'
 
 shared_scripts {
@@ -18,12 +18,14 @@ client_scripts {
     'client/main.lua',
     'client/menus.lua',
     'client/job.lua',
+    'client/impound.lua',
 }
 
 server_scripts {
     '@oxmysql/lib/MySQL.lua',
     'server/main.lua',
     'server/job.lua',
+    'server/impound.lua',
 }
 
 dependencies {

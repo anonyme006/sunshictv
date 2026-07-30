@@ -115,7 +115,11 @@ local function fetchVehicles(identifier, garageId, garageType)
     local rows = MySQL.query.await(query, params) or {}
     local list = {}
     for _, row in ipairs(rows) do
-        list[#list + 1] = buildVehicleEntry(row, garageId)
+        local garageCol = row[Config.Columns.garage] or row.parking or row.garage
+        -- Exclure les véhicules en fourrière des garages normaux
+        if not (IsImpoundGarageId and IsImpoundGarageId(garageCol)) then
+            list[#list + 1] = buildVehicleEntry(row, garageId)
+        end
     end
 
     table.sort(list, function(a, b)
@@ -192,6 +196,9 @@ lib.callback.register('ox_garage:takeOut', function(source, garageId, plate)
 
     if Config.UseGarageColumn then
         local g = row[Config.Columns.garage]
+        if g and IsImpoundGarageId and IsImpoundGarageId(g) then
+            return { ok = false, error = 'not_stored' }
+        end
         if g and g ~= '' and g ~= garageId then
             return { ok = false, error = 'not_stored' }
         end

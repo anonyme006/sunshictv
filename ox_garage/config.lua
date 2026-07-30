@@ -142,12 +142,85 @@ Config.ClassIcons = {
 
 -- Couleurs statut (ox_lib iconColor)
 Config.StatusColors = {
-    stored = '#3ecf8e', -- vert
-    out    = '#f07178', -- rouge
+    stored  = '#3ecf8e', -- vert
+    out     = '#f07178', -- rouge
+    impound = '#e6b35a', -- orange / fourrière
 }
 
 -- Labels affichés
 Config.StatusLabels = {
-    stored = 'Rangé',
-    out    = 'Sorti',
+    stored  = 'Rangé',
+    out     = 'Sorti',
+    impound = 'Fourrière',
 }
+
+--[[--------------------------------------------------------------------------
+    Fourrières
+    - public   : fourrière générale (police / ville) — le propriétaire récupère contre paiement
+    - mechanic : fourrière mécano — mise en fourrière par le job mechanic
+--------------------------------------------------------------------------]]
+Config.Impound = {
+    enabled = true,
+    progressDuration = 3500,
+    -- Compte pour payer : 'money' (cash) ou 'bank'
+    payAccount = 'bank',
+}
+
+Config.Impounds = {
+    {
+        id = 'impound_public',
+        label = 'Fourrière Générale',
+        kind = 'public', -- public | mechanic
+        -- Jobs autorisés à METTRE un véhicule en fourrière
+        jobs = { ['police'] = 0, ['sheriff'] = 0 },
+        -- Le propriétaire peut récupérer lui-même
+        ownerCanRetrieve = true,
+        -- Jobs qui peuvent aussi sortir n'importe quel véhicule (ex: police)
+        retrieveJobs = { ['police'] = 0 },
+        price = 1500,
+        society = 'society_police', -- nil = argent disparu / caisse ville
+        blip = { enabled = true, sprite = 67, color = 1, scale = 0.75 },
+        coords = vec3(409.32, -1622.94, 29.29),
+        target = {
+            coords = vec3(409.32, -1622.94, 29.29),
+            radius = 2.2,
+            debug = false,
+        },
+        store = {
+            coords = vec3(409.32, -1622.94, 29.29),
+            radius = 10.0,
+        },
+        spawns = {
+            vec4(401.45, -1631.70, 29.29, 320.0),
+            vec4(404.80, -1642.15, 29.29, 320.0),
+            vec4(416.10, -1628.40, 29.29, 140.0),
+        },
+    },
+    {
+        id = 'impound_mechanic',
+        label = 'Fourrière Mécano',
+        kind = 'mechanic',
+        jobs = { ['mechanic'] = 0 },
+        ownerCanRetrieve = true,
+        retrieveJobs = { ['mechanic'] = 0 },
+        price = 800,
+        society = 'society_mechanic',
+        blip = { enabled = true, sprite = 446, color = 5, scale = 0.75 },
+        coords = vec3(-182.55, -1306.80, 31.30),
+        target = {
+            coords = vec3(-182.55, -1306.80, 31.30),
+            radius = 2.2,
+            debug = false,
+        },
+        store = {
+            coords = vec3(-182.55, -1306.80, 31.30),
+            radius = 12.0,
+        },
+        spawns = {
+            vec4(-178.20, -1300.40, 31.30, 270.0),
+            vec4(-178.20, -1295.10, 31.30, 270.0),
+            vec4(-189.50, -1302.80, 31.30, 90.0),
+        },
+    },
+}
+

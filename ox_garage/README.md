@@ -1,42 +1,40 @@
 # ox_garage
 
-Garage moderne **ox_lib** + **ox_target** pour ESX — menus contextuels style RP haut de gamme.
+Garage moderne **ox_lib** + **ox_target** pour ESX — perso, entreprise, **fourrières**.
 
 ## Fonctionnalités
 
-- Interaction **ox_target** (ouvrir / ranger)
-- Menu **`lib.registerContext`** avec :
-  - Nom du véhicule
-  - Plaque
-  - État **Rangé** (vert) / **Sorti** (rouge)
-  - Moteur % · Carrosserie % · Carburant %
-  - Icône FontAwesome selon la classe
-- Second menu : Sortir / Infos / Retour
-- Véhicule déjà sorti → bouton grisé « Véhicule déjà sorti »
-- Assis dans le véhicule au garage → menu **Ranger / Annuler**
-- **Progress circle** au spawn et au rangement
-- Notifications **ox_lib**
+- Garages personnels (menus ox_lib, états, spawn/store)
+- Garages entreprise (Job Creator)
+- **Fourrière Générale** (police) + **Fourrière Mécano**
 
-## Intégration Job Creator (entreprises)
+## Fourrières
 
-Avec `job_creator` + `Config.UseOxGarage = true` :
+| | Générale | Mécano |
+|--|----------|--------|
+| ID | `impound_public` | `impound_mechanic` |
+| Mise en fourrière | `police` / `sheriff` | `mechanic` |
+| Récupération | Propriétaire (payant) + police | Propriétaire (payant) + mécano (gratuit staff) |
+| Prix défaut | 1500$ | 800$ |
+| Société | `society_police` | `society_mechanic` |
 
-1. Dans **/jobcreator** → marqueur **Garage** + véhicules job
-2. Les employés ouvrent le **même menu ox_lib** sur le marker
-3. Flotte stockée dans `ox_garage_job_vehicles` (plaque, états, props)
-4. Sync auto à la sauvegarde / suppression d’un véhicule job
+### Utilisation in-game
 
-Exports :
+1. Approche la zone ox_target de la fourrière
+2. **Ouvrir la fourrière** → liste des véhicules (plaque, états, tarif)
+3. Jobs autorisés : **Mettre en fourrière** (véhicule proche / actuel)
+4. Propriétaire : **Récupérer** → paiement bank/cash → spawn
+
+### Export
 
 ```lua
-exports.ox_garage:OpenJobGarage({
-    job = 'police',
-    garageId = '12',
-    label = 'Garage Police',
-    spawns = { vec4(...) },
-    store = { coords = vec3(...), radius = 8.0 },
-})
+exports.ox_garage:ImpoundVehicle(plate, 'impound_public', props)
+exports.ox_garage:OpenImpound('impound_mechanic')
 ```
+
+Config : `Config.Impounds` dans `config.lua` (coords, jobs, prix, society).
+
+Les véhicules en fourrière n’apparaissent **plus** dans les garages normaux (`parking` = id fourrière).
 
 ## Installation
 
@@ -46,7 +44,6 @@ ensure ox_target
 ensure oxmysql
 ensure es_extended
 ensure ox_garage
-ensure job_creator
 ```
 
-Table flotte créée auto (`sql/job_vehicles.sql`).
+Nécessite la colonne `parking` (ou `Config.Columns.garage`) sur `owned_vehicles`.
