@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `ox_garage_job_garages` (
+  `id` VARCHAR(64) NOT NULL,
+  `job_name` VARCHAR(50) NOT NULL,
+  `label` VARCHAR(100) NOT NULL,
+  `min_grade` INT NOT NULL DEFAULT 0,
+  `x` DOUBLE NOT NULL,
+  `y` DOUBLE NOT NULL,
+  `z` DOUBLE NOT NULL,
+  `heading` FLOAT NOT NULL DEFAULT 0,
+  `store_radius` FLOAT NOT NULL DEFAULT 10,
+  `target_radius` FLOAT NOT NULL DEFAULT 2.2,
+  `spawns` LONGTEXT NULL,
+  `blip_enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `blip_sprite` INT NOT NULL DEFAULT 357,
+  `blip_color` INT NOT NULL DEFAULT 47,
+  `blip_scale` FLOAT NOT NULL DEFAULT 0.7,
+  `created_by` VARCHAR(60) DEFAULT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `job_name` (`job_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
