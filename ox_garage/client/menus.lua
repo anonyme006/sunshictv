@@ -6,16 +6,16 @@ end
 local function statusMeta(vehicle)
     local stored = vehicle.stored
     return {
-        { label = _('plate'), value = vehicle.plate },
-        { label = _('status'), value = stored and _('vehicle_stored') or _('vehicle_out') },
-        { label = _('engine'), value = bar(vehicle.engine), progress = vehicle.engine },
-        { label = _('body'), value = bar(vehicle.body), progress = vehicle.body },
-        { label = _('fuel'), value = bar(vehicle.fuel), progress = vehicle.fuel },
+        { label = L('plate'), value = vehicle.plate },
+        { label = L('status'), value = stored and L('vehicle_stored') or L('vehicle_out') },
+        { label = L('engine'), value = bar(vehicle.engine), progress = vehicle.engine },
+        { label = L('body'), value = bar(vehicle.body), progress = vehicle.body },
+        { label = L('fuel'), value = bar(vehicle.fuel), progress = vehicle.fuel },
     }
 end
 
 local function vehicleDescription(vehicle)
-    local st = vehicle.stored and _('vehicle_stored') or _('vehicle_out')
+    local st = vehicle.stored and L('vehicle_stored') or L('vehicle_out')
     return ('%s  ·  %s  ·  🔧 %s  ·  🛡 %s  ·  ⛽ %s'):format(
         vehicle.plate or '—',
         st,
@@ -25,39 +25,138 @@ local function vehicleDescription(vehicle)
     )
 end
 
---- Menu principal : liste des véhicules
-function OpenGarageMenu(garageId)
+local function formatMoney(n)
+    n = tonumber(n) or 0
+    local s = tostring(math.floor(n))
+    local k
+    while true do
+        s, k = s:gsub('^(%-?%d+)(%d%d%d)', '%1 %2')
+        if k == 0 then break end
+    end
+    return s .. ' $'
+end
+
+--- Menu achat garage privé / places
+function OpenPrivateAccessMenu(garageId, info)
     local garage = GetGarageById(garageId)
     if not garage then return end
+    info = info or lib.callback.await('ox_garage:getPrivateInfo', false, garageId)
+    if not info then return end
 
-    -- Si le joueur est dans un véhicule → menu rangement
-    local veh = PlayerInOwnedVehicle()
-    if veh and IsNearGarageStore(garage) then
-        OpenStoreMenu(garageId)
-        return
+    local options = {
+        {
+            title = garage.label,
+            description = info.owned
+                and L('private_owned_desc', info.used or 0, info.slots or 0)
+                or L('private_buy_desc', formatMoney(info.price or 0), info.includedSlots or 1),
+            icon = 'warehouse',
+            iconColor = '#e6b35a',
+        },
+    }
+
+    if not info.owned then
+        options[#options + 1] = {
+            title = L('private_buy', formatMoney(info.price or 0)),
+            description = L('private_buy_hint'),
+            icon = 'cart-shopping',
+            iconColor = '#3ecf8e',
+            onSelect = function()
+                local result = lib.callback.await('ox_garage:buyPrivateAccess', false, garageId)
+                if not result or not result.ok then
+                    local err = result and result.error
+                    if err == 'no_money' then Notify(L('notify_no_money'), 'error')
+                    elseif err == 'already_owned' then Notify(L('private_already'), 'error')
+                    else Notify(L('notify_error'), 'error') end
+                    return
+                end
+                Notify(L('private_bought', result.priceLabel or formatMoney(result.price)), 'success')
+                OpenGarageMenu(garageId)
+            end,
+        }
+    else
+        options[#options + 1] = {
+            title = L('private_open_vehicles'),
+            description = L('private_slots_info', info.used or 0, info.slots or 0, info.maxSlots or info.slots or 0),
+            icon = 'car',
+            iconColor = Config.StatusColors.stored,
+            onSelect = function()
+                OpenGarageVehicleList(garageId)
+            end,
+        }
+
+        if (info.slots or 0) < (info.maxSlots or 0) then
+            options[#options + 1] = {
+                title = L('private_buy_slot', formatMoney(info.pricePerSlot or 0)),
+                description = L('private_buy_slot_hint'),
+                icon = 'plus',
+                iconColor = '#5b9bd5',
+                onSelect = function()
+                    local result = lib.callback.await('ox_garage:buyPrivateSlot', false, garageId)
+                    if not result or not result.ok then
+                        local err = result and result.error
+                        if err == 'no_money' then Notify(L('notify_no_money'), 'error')
+                        elseif err == 'max_slots' then Notify(L('private_max_slots'), 'error')
+                        elseif err == 'not_owned' then Notify(L('private_need_own'), 'error')
+                        else Notify(L('notify_error'), 'error') end
+                        return
+                    end
+                    Notify(L('private_slot_bought', result.slots, result.priceLabel or formatMoney(result.price)), 'success')
+                    OpenPrivateAccessMenu(garageId)
+                end,
+            }
+        end
     end
+
+    options[#options + 1] = {
+        title = L('cancel'),
+        icon = 'xmark',
+        onSelect = function() end,
+    }
+
+    lib.registerContext({
+        id = 'ox_garage_private_' .. garageId,
+        title = L('private_menu_title', garage.label),
+        options = options,
+    })
+    lib.showContext('ox_garage_private_' .. garageId)
+end
+
+--- Liste véhicules (après accès OK)
+function OpenGarageVehicleList(garageId)
+    local garage = GetGarageById(garageId)
+    if not garage then return end
 
     local vehicles = lib.callback.await('ox_garage:getVehicles', false, garageId) or {}
 
     if #vehicles == 0 then
+        local emptyOptions = {
+            {
+                title = L('menu_empty'),
+                icon = 'inbox',
+                iconColor = '#8b97a8',
+                disabled = true,
+            },
+        }
+        if garage.kind == 'private' then
+            emptyOptions[#emptyOptions + 1] = {
+                title = L('private_manage'),
+                icon = 'gears',
+                onSelect = function()
+                    OpenPrivateAccessMenu(garageId)
+                end,
+            }
+        end
         lib.registerContext({
             id = 'ox_garage_main_' .. garageId,
-            title = _('menu_title', garage.label),
-            options = {
-                {
-                    title = _('menu_empty'),
-                    icon = 'inbox',
-                    iconColor = '#8b97a8',
-                    disabled = true,
-                },
-            },
+            title = L('menu_title', garage.label),
+            options = emptyOptions,
         })
         lib.showContext('ox_garage_main_' .. garageId)
         return
     end
 
     local options = {}
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         local name = GetVehicleDisplayName(v.model)
         local stored = v.stored
         options[#options + 1] = {
@@ -73,12 +172,52 @@ function OpenGarageMenu(garageId)
         }
     end
 
+    if garage.kind == 'private' then
+        options[#options + 1] = {
+            title = L('private_manage'),
+            icon = 'gears',
+            onSelect = function()
+                OpenPrivateAccessMenu(garageId)
+            end,
+        }
+    end
+
     lib.registerContext({
         id = 'ox_garage_main_' .. garageId,
-        title = _('menu_title', garage.label),
+        title = L('menu_title', garage.label),
         options = options,
     })
     lib.showContext('ox_garage_main_' .. garageId)
+end
+
+--- Menu principal : liste des véhicules
+function OpenGarageMenu(garageId)
+    local garage = GetGarageById(garageId)
+    if not garage then return end
+
+    -- Si le joueur est dans un véhicule → menu rangement
+    local veh = PlayerInOwnedVehicle()
+    if veh and IsNearGarageStore(garage) then
+        if garage.kind == 'private' then
+            local info = lib.callback.await('ox_garage:getPrivateInfo', false, garageId)
+            if not info or not info.owned then
+                OpenPrivateAccessMenu(garageId, info)
+                return
+            end
+        end
+        OpenStoreMenu(garageId)
+        return
+    end
+
+    if garage.kind == 'private' then
+        local info = lib.callback.await('ox_garage:getPrivateInfo', false, garageId)
+        if not info or not info.owned then
+            OpenPrivateAccessMenu(garageId, info)
+            return
+        end
+    end
+
+    OpenGarageVehicleList(garageId)
 end
 
 --- Second menu : détail + actions
@@ -105,7 +244,7 @@ function OpenVehicleDetailMenu(garageId, vehicle)
 
     if stored then
         options[#options + 1] = {
-            title = _('take_out'),
+            title = L('take_out'),
             description = 'Faire apparaître le véhicule au point de sortie',
             icon = 'key',
             iconColor = Config.StatusColors.stored,
@@ -115,7 +254,7 @@ function OpenVehicleDetailMenu(garageId, vehicle)
         }
     else
         options[#options + 1] = {
-            title = _('already_out'),
+            title = L('already_out'),
             description = 'Ce véhicule est déjà dehors',
             icon = 'ban',
             iconColor = Config.StatusColors.out,
@@ -124,7 +263,7 @@ function OpenVehicleDetailMenu(garageId, vehicle)
     end
 
     options[#options + 1] = {
-        title = _('view_info'),
+        title = L('view_info'),
         description = 'Détails moteur / carrosserie / carburant',
         icon = 'circle-info',
         onSelect = function()
@@ -133,7 +272,7 @@ function OpenVehicleDetailMenu(garageId, vehicle)
     }
 
     options[#options + 1] = {
-        title = _('back'),
+        title = L('back'),
         icon = 'arrow-left',
         onSelect = function()
             OpenGarageMenu(garageId)
@@ -155,43 +294,43 @@ function OpenVehicleInfoMenu(garageId, vehicle)
 
     lib.registerContext({
         id = 'ox_garage_info_' .. garageId,
-        title = _('info_title', name),
+        title = L('info_title', name),
         menu = 'ox_garage_detail_' .. garageId,
         options = {
             {
-                title = _('plate'),
+                title = L('plate'),
                 description = vehicle.plate,
                 icon = 'id-card',
             },
             {
-                title = _('status'),
-                description = vehicle.stored and _('vehicle_stored') or _('vehicle_out'),
+                title = L('status'),
+                description = vehicle.stored and L('vehicle_stored') or L('vehicle_out'),
                 icon = vehicle.stored and 'warehouse' or 'road',
                 iconColor = vehicle.stored and Config.StatusColors.stored or Config.StatusColors.out,
             },
             {
-                title = _('engine'),
+                title = L('engine'),
                 description = bar(vehicle.engine),
                 icon = 'engine',
                 progress = vehicle.engine,
                 colorScheme = vehicle.engine > 50 and 'green' or (vehicle.engine > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('body'),
+                title = L('body'),
                 description = bar(vehicle.body),
                 icon = 'car-burst',
                 progress = vehicle.body,
                 colorScheme = vehicle.body > 50 and 'green' or (vehicle.body > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('fuel'),
+                title = L('fuel'),
                 description = bar(vehicle.fuel),
                 icon = 'gas-pump',
                 progress = vehicle.fuel,
                 colorScheme = vehicle.fuel > 50 and 'green' or (vehicle.fuel > 25 and 'yellow' or 'red'),
             },
             {
-                title = _('back'),
+                title = L('back'),
                 icon = 'arrow-left',
                 onSelect = function()
                     OpenVehicleDetailMenu(garageId, vehicle)
@@ -202,24 +341,38 @@ function OpenVehicleInfoMenu(garageId, vehicle)
     lib.showContext('ox_garage_info_' .. garageId)
 end
 
---- Menu rangement (assis dans le véhicule)
-function OpenStoreMenu(garageId)
+--- Menu rangement (dans le véhicule OU target dessus au point)
+function OpenStoreMenu(garageId, veh)
     local garage = GetGarageById(garageId)
     if not garage then return end
 
-    local veh = PlayerInOwnedVehicle()
-    if not veh then
-        Notify(_('notify_not_in_vehicle'), 'error')
+    if garage.kind == 'private' then
+        local info = lib.callback.await('ox_garage:getPrivateInfo', false, garageId)
+        if not info or not info.owned then
+            OpenPrivateAccessMenu(garageId, info)
+            return
+        end
+    end
+
+    veh = veh or PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+    if not veh or not DoesEntityExist(veh) then
+        Notify(L('notify_no_vehicle_store'), 'error')
+        return
+    end
+
+    if not IsVehicleNearGarageStore(veh, garage) and not IsNearGarageStore(garage) then
+        Notify(L('notify_too_far'), 'error')
         return
     end
 
     local plate = GetVehicleNumberPlateText(veh)
     local model = GetEntityModel(veh)
     local name = GetVehicleDisplayName(model)
+    local inVeh = IsPedInVehicle(PlayerPedId(), veh, false)
 
     lib.registerContext({
         id = 'ox_garage_store_' .. garageId,
-        title = _('store_menu_title'),
+        title = L('store_menu_title'),
         options = {
             {
                 title = name,
@@ -233,16 +386,18 @@ function OpenStoreMenu(garageId)
                 iconColor = Config.StatusColors.out,
             },
             {
-                title = _('store_vehicle'),
-                description = 'Sauvegarder et ranger dans ' .. garage.label,
-                icon = 'square-parking',
+                title = inVeh and L('store_exit_and_store') or L('store_vehicle'),
+                description = inVeh
+                    and L('store_exit_and_store_desc', garage.label)
+                    or L('store_vehicle_desc', garage.label),
+                icon = inVeh and 'person-walking-arrow-right' or 'square-parking',
                 iconColor = Config.StatusColors.stored,
                 onSelect = function()
                     StoreVehicle(garageId, veh)
                 end,
             },
             {
-                title = _('cancel'),
+                title = L('cancel'),
                 icon = 'xmark',
                 onSelect = function() end,
             },
@@ -260,12 +415,13 @@ function TakeOutVehicle(garageId, vehicle)
     if not result or not result.ok then
         local err = result and result.error or 'error'
         local map = {
-            already_out = _('notify_already_out'),
-            not_yours = _('notify_not_yours'),
-            not_stored = _('notify_not_stored'),
-            error = _('notify_error'),
+            already_out = L('notify_already_out'),
+            not_yours = L('notify_not_yours'),
+            not_stored = L('notify_not_stored'),
+            not_owned = L('private_need_own'),
+            error = L('notify_error'),
         }
-        Notify(map[err] or _('notify_error'), 'error')
+        Notify(map[err] or L('notify_error'), 'error')
         return
     end
 
@@ -273,7 +429,7 @@ function TakeOutVehicle(garageId, vehicle)
     if not spawn then
         -- Rollback soft : on laisse le serveur en "sorti" mais on prévient
         -- Mieux : remettre stored=1 — pour simplicité on notifie
-        Notify(_('no_spawn'), 'error')
+        Notify(L('no_spawn'), 'error')
         -- Re-store côté serveur via store impossible sans entity — force callback reverse
         TriggerServerEvent('ox_garage:forceStore', vehicle.plate, garageId)
         return
@@ -281,7 +437,7 @@ function TakeOutVehicle(garageId, vehicle)
 
     local success = lib.progressCircle({
         duration = Config.ProgressSpawn,
-        label = _('progress_spawn'),
+        label = L('progress_spawn'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
@@ -294,7 +450,7 @@ function TakeOutVehicle(garageId, vehicle)
 
     if not success then
         TriggerServerEvent('ox_garage:forceStore', vehicle.plate, garageId)
-        Notify(_('cancel'), 'inform')
+        Notify(L('cancel'), 'inform')
         return
     end
 
@@ -307,7 +463,7 @@ function TakeOutVehicle(garageId, vehicle)
     local entity = CreateVehicle(model, spawn.x, spawn.y, spawn.z, spawn.w or 0.0, true, false)
     if not entity or entity == 0 then
         TriggerServerEvent('ox_garage:forceStore', vehicle.plate, garageId)
-        Notify(_('notify_error'), 'error')
+        Notify(L('notify_error'), 'error')
         return
     end
 
@@ -326,27 +482,42 @@ function TakeOutVehicle(garageId, vehicle)
     TaskWarpPedIntoVehicle(PlayerPedId(), entity, -1)
     SetModelAsNoLongerNeeded(model)
 
-    Notify(_('notify_spawned', GetVehicleDisplayName(model)), 'success')
+    Notify(L('notify_spawned', GetVehicleDisplayName(model)), 'success')
     -- Fermeture auto : pas de menu réouvert
 end
 
---- Ranger
+--- Ranger (descend d'abord si encore assis)
 function StoreVehicle(garageId, veh)
     local garage = GetGarageById(garageId)
     if not garage then return end
     if not veh or not DoesEntityExist(veh) then
-        Notify(_('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_no_vehicle_store'), 'error')
         return
     end
 
-    if not IsNearGarageStore(garage) then
-        Notify(_('notify_too_far'), 'error')
+    if not IsVehicleNearGarageStore(veh, garage) and not IsNearGarageStore(garage) then
+        Notify(L('notify_too_far'), 'error')
+        return
+    end
+
+    local ped = PlayerPedId()
+    if IsPedInVehicle(ped, veh, false) then
+        TaskLeaveVehicle(ped, veh, 16)
+        local timeout = GetGameTimer() + 4000
+        while IsPedInVehicle(ped, veh, false) and GetGameTimer() < timeout do
+            Wait(100)
+        end
+        Wait(400)
+    end
+
+    if not DoesEntityExist(veh) then
+        Notify(L('notify_error'), 'error')
         return
     end
 
     local success = lib.progressCircle({
         duration = Config.ProgressStore,
-        label = _('progress_store'),
+        label = L('progress_store'),
         position = 'bottom',
         useWhileDead = false,
         canCancel = true,
@@ -358,38 +529,43 @@ function StoreVehicle(garageId, veh)
     })
 
     if not success then
-        Notify(_('cancel'), 'inform')
+        Notify(L('cancel'), 'inform')
         return
     end
 
     if not DoesEntityExist(veh) then
-        Notify(_('notify_error'), 'error')
+        Notify(L('notify_error'), 'error')
+        return
+    end
+
+    -- Re-check distance après la progress (véhicule doit rester sur le point)
+    if not IsVehicleNearGarageStore(veh, garage) then
+        Notify(L('notify_too_far'), 'error')
         return
     end
 
     local props = GetVehicleProps(veh)
     local netId = NetworkGetNetworkIdFromEntity(veh)
-    local plate = props.plate or GetVehicleNumberPlateText(veh)
     local name = GetVehicleDisplayName(GetEntityModel(veh))
 
     local result = lib.callback.await('ox_garage:store', false, garageId, netId, props)
     if not result or not result.ok then
         local err = result and result.error or 'error'
         local map = {
-            not_yours = _('notify_not_yours'),
-            too_far = _('notify_too_far'),
-            error = _('notify_error'),
+            not_yours = L('notify_not_yours'),
+            too_far = L('notify_too_far'),
+            not_owned = L('private_need_own'),
+            no_slot = L('private_no_slot'),
+            error = L('notify_error'),
         }
-        Notify(map[err] or _('notify_error'), 'error')
+        Notify(map[err] or L('notify_error'), 'error')
         return
     end
 
-    TaskLeaveVehicle(PlayerPedId(), veh, 16)
-    Wait(800)
     if DoesEntityExist(veh) then
         SetEntityAsMissionEntity(veh, true, true)
         DeleteVehicle(veh)
     end
 
-    Notify(_('notify_stored', name), 'success')
+    Notify(L('notify_stored', name), 'success')
 end

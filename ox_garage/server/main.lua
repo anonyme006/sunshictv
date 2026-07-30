@@ -3,6 +3,43 @@ local ESX = exports['es_extended']:getSharedObject()
 ---@type table<string, number> plate -> netId of spawned vehicles
 local spawnedByPlate = {}
 
+--- Crée owned_vehicles si absente + assure la colonne parking
+MySQL.ready(function()
+    local sql = LoadResourceFile(GetCurrentResourceName(), 'sql/owned_vehicles.sql')
+    if sql then
+        for statement in sql:gmatch('([^;]+);') do
+            local trimmed = statement:gsub('^%s+', ''):gsub('%s+$', '')
+            if trimmed ~= '' and not trimmed:match('^%-%-') then
+                MySQL.query.await(trimmed)
+            end
+        end
+    end
+
+    local tbl = (Config.Columns and Config.Columns.table) or 'owned_vehicles'
+    local garageCol = (Config.Columns and Config.Columns.garage) or 'parking'
+
+    local col = MySQL.single.await([[
+        SELECT COLUMN_NAME AS name
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = ?
+          AND COLUMN_NAME = ?
+        LIMIT 1
+    ]], { tbl, garageCol })
+
+    if not col then
+        MySQL.query.await(
+            ('ALTER TABLE `%s` ADD COLUMN `%s` VARCHAR(60) DEFAULT NULL'):format(tbl, garageCol)
+        )
+        print(('^2[ox_garage]^0 colonne `%s`.`%s` ajoutée'):format(tbl, garageCol))
+    end
+
+    -- Index parking (ignore si déjà présent)
+    pcall(function()
+        MySQL.query.await(('CREATE INDEX `parking` ON `%s` (`%s`)'):format(tbl, garageCol))
+    end)
+end)
+
 local function _(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then
@@ -84,25 +121,38 @@ local function buildVehicleEntry(row, garageId)
 end
 
 ---@param identifier string
----@param garageId string
----@param garageType string
-local function fetchVehicles(identifier, garageId, garageType)
+---@param garage table
+local function fetchVehicles(identifier, garage)
+    local garageId = garage.id
+    local garageType = garage.type or Config.DefaultType
     local tbl = Config.Columns.table
     local ownerCol = Config.Columns.owner
     local typeCol = Config.Columns.type
     local garageCol = Config.Columns.garage
+    local isPrivate = IsPrivateGarage and IsPrivateGarage(garage)
 
     local query, params
 
     if Config.UseGarageColumn then
-        -- Véhicules de ce garage OU rangés sans parking défini (compat)
-        query = ([[
-            SELECT * FROM `%s`
-            WHERE `%s` = ?
-              AND (`%s` = ? OR `%s` IS NULL OR `%s` = '')
-              AND (`%s` = ? OR `%s` IS NULL OR `%s` = 'car')
-        ]]):format(tbl, ownerCol, garageCol, garageCol, garageCol, typeCol, typeCol, typeCol)
-        params = { identifier, garageId, garageType }
+        if isPrivate then
+            -- Privé : uniquement les véhicules rangés dans CE garage
+            query = ([[
+                SELECT * FROM `%s`
+                WHERE `%s` = ?
+                  AND `%s` = ?
+                  AND (`%s` = ? OR `%s` IS NULL OR `%s` = 'car')
+            ]]):format(tbl, ownerCol, garageCol, typeCol, typeCol, typeCol)
+            params = { identifier, garageId, garageType }
+        else
+            -- Public : ce garage OU sans parking (compat) — hors privés / fourrière
+            query = ([[
+                SELECT * FROM `%s`
+                WHERE `%s` = ?
+                  AND (`%s` = ? OR `%s` IS NULL OR `%s` = '')
+                  AND (`%s` = ? OR `%s` IS NULL OR `%s` = 'car')
+            ]]):format(tbl, ownerCol, garageCol, garageCol, garageCol, typeCol, typeCol, typeCol)
+            params = { identifier, garageId, garageType }
+        end
     else
         query = ([[
             SELECT * FROM `%s`
@@ -113,14 +163,24 @@ local function fetchVehicles(identifier, garageId, garageType)
     end
 
     local rows = MySQL.query.await(query, params) or {}
+    local privateIds = GetPrivateGarageIds and GetPrivateGarageIds() or {}
     local list = {}
     for _, row in ipairs(rows) do
+        local gCol = row[Config.Columns.garage] or row.parking or row.garage
+        if IsImpoundGarageId and IsImpoundGarageId(gCol) then
+            goto continue
+        end
+        -- Sur le public, ne pas afficher un véhicule déjà lié à un privé
+        if not isPrivate and gCol and gCol ~= '' and gCol ~= garageId and privateIds[gCol] then
+            goto continue
+        end
         list[#list + 1] = buildVehicleEntry(row, garageId)
+        ::continue::
     end
 
     table.sort(list, function(a, b)
         if a.stored ~= b.stored then
-            return a.stored and not b.stored -- rangés d'abord
+            return a.stored and not b.stored
         end
         return (a.plate or '') < (b.plate or '')
     end)
@@ -128,17 +188,25 @@ local function fetchVehicles(identifier, garageId, garageType)
     return list
 end
 
+local function findGarage(garageId)
+    for _, g in ipairs(Config.Garages) do
+        if g.id == garageId then return g end
+    end
+end
+
 lib.callback.register('ox_garage:getVehicles', function(source, garageId)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return {} end
 
-    local garage
-    for _, g in ipairs(Config.Garages) do
-        if g.id == garageId then garage = g break end
-    end
+    local garage = findGarage(garageId)
     if not garage then return {} end
 
-    return fetchVehicles(xPlayer.identifier, garage.id, garage.type or Config.DefaultType)
+    if IsPrivateGarage and IsPrivateGarage(garage) then
+        local access = GetPrivateAccess and GetPrivateAccess(xPlayer.identifier, garage.id)
+        if not access then return {} end
+    end
+
+    return fetchVehicles(xPlayer.identifier, garage)
 end)
 
 lib.callback.register('ox_garage:getVehicle', function(source, plate)
@@ -163,11 +231,15 @@ lib.callback.register('ox_garage:takeOut', function(source, garageId, plate)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return { ok = false, error = 'error' } end
 
-    local garage
-    for _, g in ipairs(Config.Garages) do
-        if g.id == garageId then garage = g break end
-    end
+    local garage = findGarage(garageId)
     if not garage then return { ok = false, error = 'error' } end
+
+    if IsPrivateGarage and IsPrivateGarage(garage) then
+        local access = GetPrivateAccess and GetPrivateAccess(xPlayer.identifier, garage.id)
+        if not access then
+            return { ok = false, error = 'not_owned' }
+        end
+    end
 
     plate = normalizePlate(plate)
     local tbl = Config.Columns.table
@@ -192,7 +264,14 @@ lib.callback.register('ox_garage:takeOut', function(source, garageId, plate)
 
     if Config.UseGarageColumn then
         local g = row[Config.Columns.garage]
-        if g and g ~= '' and g ~= garageId then
+        if g and IsImpoundGarageId and IsImpoundGarageId(g) then
+            return { ok = false, error = 'not_stored' }
+        end
+        if IsPrivateGarage and IsPrivateGarage(garage) then
+            if not g or g ~= garageId then
+                return { ok = false, error = 'not_stored' }
+            end
+        elseif g and g ~= '' and g ~= garageId then
             return { ok = false, error = 'not_stored' }
         end
     end
@@ -220,6 +299,16 @@ RegisterNetEvent('ox_garage:registerSpawn', function(plate, netId)
     if not xPlayer or type(plate) ~= 'string' then return end
     spawnedByPlate[normalizePlate(plate)] = netId
 end)
+
+--- Nettoie le tracking spawn (utilisé par remise fourrière admin)
+function ClearSpawnedByPlate(plate)
+    plate = normalizePlate(plate)
+    local netId = spawnedByPlate[plate]
+    spawnedByPlate[plate] = nil
+    return netId
+end
+
+exports('ClearSpawnedByPlate', ClearSpawnedByPlate)
 
 --- Rollback si spawn annulé / échoué
 RegisterNetEvent('ox_garage:forceStore', function(plate, garageId)
@@ -258,10 +347,7 @@ lib.callback.register('ox_garage:store', function(source, garageId, netId, props
     local xPlayer = ESX.GetPlayerFromId(source)
     if not xPlayer then return { ok = false, error = 'error' } end
 
-    local garage
-    for _, g in ipairs(Config.Garages) do
-        if g.id == garageId then garage = g break end
-    end
+    local garage = findGarage(garageId)
     if not garage then return { ok = false, error = 'error' } end
 
     if type(props) ~= 'table' or not props.plate then
@@ -291,6 +377,24 @@ lib.callback.register('ox_garage:store', function(source, garageId, netId, props
     local maxDist = (garage.store and garage.store.radius) or Config.StoreDistance
     if #(pCoords - storeCoords) > (maxDist + 5.0) then
         return { ok = false, error = 'too_far' }
+    end
+
+    -- Garage privé : accès + places
+    if IsPrivateGarage and IsPrivateGarage(garage) then
+        local access = GetPrivateAccess and GetPrivateAccess(xPlayer.identifier, garage.id)
+        if not access then
+            return { ok = false, error = 'not_owned' }
+        end
+
+        local currentParking = row[garageCol]
+        local alreadyHere = currentParking == garage.id
+        if not alreadyHere then
+            local used = CountVehiclesInGarage and CountVehiclesInGarage(xPlayer.identifier, garage.id) or 0
+            local slots = tonumber(access.slots) or 0
+            if used >= slots then
+                return { ok = false, error = 'no_slot' }
+            end
+        end
     end
 
     -- Nettoie props

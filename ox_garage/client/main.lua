@@ -1,6 +1,6 @@
 local blips = {}
 
-function _(key, ...)
+function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then
         return str:format(...)
@@ -19,16 +19,55 @@ function Notify(desc, nType)
 end
 
 function GetGarageById(id)
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == id then return g end
     end
 end
 
-function IsNearGarageStore(garage)
-    local ped = PlayerPedId()
-    local coords = GetEntityCoords(ped)
-    local store = garage.store or { coords = garage.coords, radius = Config.StoreDistance }
+function GetGarageStoreInfo(garage)
+    return garage.store or { coords = garage.coords, radius = Config.StoreDistance }
+end
+
+function IsCoordsNearGarageStore(coords, garage)
+    local store = GetGarageStoreInfo(garage)
+    if not store.coords then return false end
     return #(coords - store.coords) <= (store.radius or Config.StoreDistance)
+end
+
+function IsNearGarageStore(garage)
+    return IsCoordsNearGarageStore(GetEntityCoords(PlayerPedId()), garage)
+end
+
+function IsVehicleNearGarageStore(veh, garage)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return false end
+    return IsCoordsNearGarageStore(GetEntityCoords(veh), garage)
+end
+
+--- Garage dont le point de rangement couvre ce véhicule
+function GetStoreGarageForVehicle(veh)
+    if not veh or veh == 0 or not DoesEntityExist(veh) then return nil end
+    local vCoords = GetEntityCoords(veh)
+    for _i, garage in ipairs(Config.Garages) do
+        if IsCoordsNearGarageStore(vCoords, garage) then
+            return garage
+        end
+    end
+    return nil
+end
+
+--- Véhicule le plus proche sur le point de rangement
+function GetClosestVehicleAtStore(garage, maxDist)
+    local store = GetGarageStoreInfo(garage)
+    if not store.coords then return nil end
+    maxDist = maxDist or (store.radius or Config.StoreDistance)
+    local best, bestDist
+    for _i, veh in ipairs(GetGamePool('CVehicle')) do
+        local d = #(GetEntityCoords(veh) - store.coords)
+        if d <= maxDist and (not bestDist or d < bestDist) then
+            best, bestDist = veh, d
+        end
+    end
+    return best
 end
 
 function PlayerInOwnedVehicle()
@@ -58,7 +97,7 @@ end
 function IsSpawnPointClear(coords, radius)
     radius = radius or 2.5
     local vehicles = GetGamePool('CVehicle')
-    for _, veh in ipairs(vehicles) do
+    for _i, veh in ipairs(vehicles) do
         if #(GetEntityCoords(veh) - vec3(coords.x, coords.y, coords.z)) < radius then
             return false
         end
@@ -67,7 +106,7 @@ function IsSpawnPointClear(coords, radius)
 end
 
 function FindFreeSpawn(spawns)
-    for _, s in ipairs(spawns or {}) do
+    for _i, s in ipairs(spawns or {}) do
         if IsSpawnPointClear(s, 2.8) then
             return s
         end
@@ -126,9 +165,53 @@ function SetVehicleProps(vehicle, props)
     ApplyFuel(vehicle, props.fuelLevel or props.fuel or 100.0)
 end
 
---- Blips + ox_target
+local storeMarkers = {}
+
+local function registerStoreZone(garage)
+    local store = garage.store
+    if not store then return end
+
+    local st = store.target or {
+        coords = store.coords or garage.coords,
+        radius = math.min(store.radius or Config.StoreDistance, 5.0),
+        debug = false,
+    }
+
+    exports.ox_target:addSphereZone({
+        coords = st.coords,
+        radius = st.radius or 4.0,
+        debug = st.debug or false,
+        options = {
+            {
+                name = 'ox_garage_store_' .. garage.id,
+                icon = 'fa-solid fa-square-parking',
+                label = L('target_store'),
+                distance = 3.5,
+                canInteract = function()
+                    if not IsNearGarageStore(garage) then return false end
+                    if PlayerInOwnedVehicle() then return true end
+                    return GetClosestVehicleAtStore(garage) ~= nil
+                end,
+                onSelect = function()
+                    local veh = PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+                    OpenStoreMenu(garage.id, veh)
+                end,
+            },
+        },
+    })
+
+    if store.marker and store.marker.enabled then
+        storeMarkers[#storeMarkers + 1] = {
+            coords = store.coords or st.coords,
+            marker = store.marker,
+            garage = garage,
+        }
+    end
+end
+
+--- Blips + ox_target (ouvrir + point ranger dédié)
 CreateThread(function()
-    for _, garage in ipairs(Config.Garages) do
+    for _i, garage in ipairs(Config.Garages) do
         if garage.blip and garage.blip.enabled then
             local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
             SetBlipSprite(blip, garage.blip.sprite or 357)
@@ -142,7 +225,7 @@ CreateThread(function()
             blips[#blips + 1] = blip
         end
 
-        local t = garage.target
+        local t = garage.target or { coords = garage.coords, radius = 2.0 }
         exports.ox_target:addSphereZone({
             coords = t.coords,
             radius = t.radius or 2.0,
@@ -151,25 +234,83 @@ CreateThread(function()
                 {
                     name = 'ox_garage_open_' .. garage.id,
                     icon = 'fa-solid fa-warehouse',
-                    label = _('target_open'),
+                    label = L('target_open'),
                     distance = 2.0,
                     onSelect = function()
                         OpenGarageMenu(garage.id)
                     end,
                 },
-                {
-                    name = 'ox_garage_store_' .. garage.id,
-                    icon = 'fa-solid fa-square-parking',
-                    label = _('target_store'),
-                    distance = 2.5,
-                    canInteract = function()
-                        return PlayerInOwnedVehicle() ~= nil and IsNearGarageStore(garage)
-                    end,
-                    onSelect = function()
-                        OpenStoreMenu(garage.id)
-                    end,
-                },
             },
         })
+
+        registerStoreZone(garage)
     end
+end)
+
+--- Markers des points de rangement
+CreateThread(function()
+    while true do
+        local sleep = 1000
+        local ped = PlayerPedId()
+        local pCoords = GetEntityCoords(ped)
+
+        for _i, entry in ipairs(storeMarkers) do
+            local m = entry.marker
+            local c = entry.coords
+            local drawDist = m.drawDistance or 35.0
+            local dist = #(pCoords - c)
+            if dist < drawDist then
+                sleep = 0
+                local scale = m.scale or vec3(1.0, 1.0, 1.0)
+                local col = m.color or { r = 255, g = 200, b = 40, a = 150 }
+                DrawMarker(
+                    m.type or 36,
+                    c.x, c.y, c.z + 0.15,
+                    0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0,
+                    scale.x, scale.y, scale.z,
+                    col.r, col.g, col.b, col.a,
+                    m.bobUpAndDown == true,
+                    m.faceCamera ~= false,
+                    2,
+                    m.rotate == true,
+                    nil, nil, false
+                )
+            end
+        end
+
+        Wait(sleep)
+    end
+end)
+
+--- Target sur le véhicule au point de rangement (à pied ou dedans)
+CreateThread(function()
+    exports.ox_target:addGlobalVehicle({
+        {
+            name = 'ox_garage_store_on_vehicle',
+            icon = 'fa-solid fa-square-parking',
+            label = L('target_store_vehicle'),
+            distance = 3.0,
+            canInteract = function(entity)
+                if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
+                local garage = GetStoreGarageForVehicle(entity)
+                if not garage then return false end
+                -- Joueur proche du point OU du véhicule (après être descendu)
+                local pedCoords = GetEntityCoords(PlayerPedId())
+                local nearStore = IsNearGarageStore(garage)
+                local nearVeh = #(pedCoords - GetEntityCoords(entity)) <= 4.0
+                return nearStore or (nearVeh and IsVehicleNearGarageStore(entity, garage))
+            end,
+            onSelect = function(data)
+                local veh = data.entity
+                if not veh or not DoesEntityExist(veh) then return end
+                local garage = GetStoreGarageForVehicle(veh)
+                if not garage then
+                    Notify(L('notify_too_far'), 'error')
+                    return
+                end
+                OpenStoreMenu(garage.id, veh)
+            end,
+        },
+    })
 end)
