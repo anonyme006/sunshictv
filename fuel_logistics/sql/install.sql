@@ -1,0 +1,91 @@
+CREATE TABLE IF NOT EXISTS `fl_stations` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(100) NOT NULL,
+  `coords` TEXT NOT NULL,
+  `capacity` INT NOT NULL DEFAULT 5000,
+  `level` FLOAT NOT NULL DEFAULT 0,
+  `buy_price` INT NOT NULL DEFAULT 6,
+  `consumption` FLOAT NOT NULL DEFAULT 2.0,
+  `owner_job` VARCHAR(50) DEFAULT NULL,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_companies` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `job_name` VARCHAR(50) NOT NULL,
+  `label` VARCHAR(100) NOT NULL,
+  `coords` TEXT NOT NULL,
+  `capacity` INT NOT NULL DEFAULT 2000,
+  `level` FLOAT NOT NULL DEFAULT 0,
+  `buy_price` INT NOT NULL DEFAULT 10,
+  `enabled` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `job_name` (`job_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_history` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `type` VARCHAR(30) NOT NULL,
+  `identifier` VARCHAR(60) DEFAULT NULL,
+  `player_name` VARCHAR(100) DEFAULT NULL,
+  `target_type` VARCHAR(20) DEFAULT NULL,
+  `target_id` INT DEFAULT NULL,
+  `target_name` VARCHAR(100) DEFAULT NULL,
+  `liters` FLOAT DEFAULT 0,
+  `amount` INT DEFAULT 0,
+  `meta` LONGTEXT DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_exports` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `identifier` VARCHAR(60) NOT NULL,
+  `player_name` VARCHAR(100) DEFAULT NULL,
+  `barrels` INT NOT NULL,
+  `amount` INT NOT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_transactions` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `kind` VARCHAR(30) NOT NULL,
+  `amount` INT NOT NULL,
+  `balance_after` INT DEFAULT NULL,
+  `note` VARCHAR(255) DEFAULT NULL,
+  `identifier` VARCHAR(60) DEFAULT NULL,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_orders` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `target_type` VARCHAR(20) NOT NULL DEFAULT 'station',
+  `target_id` INT NOT NULL,
+  `target_name` VARCHAR(100) DEFAULT NULL,
+  `liters` INT NOT NULL,
+  `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+  `accepted_by` VARCHAR(60) DEFAULT NULL,
+  `accepted_name` VARCHAR(100) DEFAULT NULL,
+  `reward` INT DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `expires_at` TIMESTAMP NULL DEFAULT NULL,
+  `completed_at` TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `fl_storage` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `name` VARCHAR(50) NOT NULL DEFAULT 'warehouse',
+  `barrels` INT NOT NULL DEFAULT 0,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
