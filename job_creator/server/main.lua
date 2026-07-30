@@ -7,7 +7,7 @@ JC.ShopItems = {}
 JC.Crafts = {}
 JC.Ready = false
 
-function _(key, ...)
+function L(key, ...)
     local str = (Locales[Config.Locale] and Locales[Config.Locale][key]) or key
     if ... then
         return str:format(...)
@@ -31,7 +31,7 @@ function JC.HasPermission(xPlayer, perm)
     if not job then return false end
 
     local gradeData = nil
-    for _, g in ipairs(job.grades or {}) do
+    for _i, g in ipairs(job.grades or {}) do
         if g.grade == xPlayer.job.grade then
             gradeData = g
             break
@@ -87,7 +87,7 @@ function JC.LoadAll()
     local shops = MySQL.query.await('SELECT * FROM jc_shop_items') or {}
     local crafts = MySQL.query.await('SELECT * FROM jc_crafts') or {}
 
-    for _, j in ipairs(jobs) do
+    for _i, j in ipairs(jobs) do
         JC.Jobs[j.name] = {
             id = j.id,
             name = j.name,
@@ -106,7 +106,7 @@ function JC.LoadAll()
         }
     end
 
-    for _, g in ipairs(grades) do
+    for _i, g in ipairs(grades) do
         if JC.Jobs[g.job_name] then
             JC.Jobs[g.job_name].grades[#JC.Jobs[g.job_name].grades + 1] = {
                 id = g.id,
@@ -119,7 +119,7 @@ function JC.LoadAll()
         end
     end
 
-    for _, m in ipairs(markers) do
+    for _i, m in ipairs(markers) do
         local entry = {
             id = m.id,
             job_name = m.job_name,
@@ -141,7 +141,7 @@ function JC.LoadAll()
         JC.Markers[m.id] = entry
     end
 
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         JC.Vehicles[v.id] = {
             id = v.id,
             job_name = v.job_name,
@@ -155,7 +155,7 @@ function JC.LoadAll()
         }
     end
 
-    for _, o in ipairs(outfits) do
+    for _i, o in ipairs(outfits) do
         JC.Outfits[o.id] = {
             id = o.id,
             job_name = o.job_name,
@@ -166,7 +166,7 @@ function JC.LoadAll()
         }
     end
 
-    for _, s in ipairs(shops) do
+    for _i, s in ipairs(shops) do
         JC.ShopItems[s.id] = {
             id = s.id,
             job_name = s.job_name,
@@ -179,7 +179,7 @@ function JC.LoadAll()
         }
     end
 
-    for _, c in ipairs(crafts) do
+    for _i, c in ipairs(crafts) do
         JC.Crafts[c.id] = {
             id = c.id,
             job_name = c.job_name,
@@ -208,7 +208,7 @@ function JC.SyncOxGarageFleet()
     if GetResourceState('ox_garage') ~= 'started' then return end
 
     local list = {}
-    for _, v in pairs(JC.Vehicles) do
+    for _i, v in pairs(JC.Vehicles) do
         list[#list + 1] = {
             id = v.id,
             job_name = v.job_name,

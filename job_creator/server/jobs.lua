@@ -15,7 +15,7 @@ local function syncEsxJob(job)
 
     MySQL.query.await('DELETE FROM job_grades WHERE job_name = ?', { job.name })
 
-    for _, g in ipairs(job.grades or {}) do
+    for _i, g in ipairs(job.grades or {}) do
         MySQL.insert.await('INSERT INTO job_grades (job_name, grade, name, label, salary, skin_male, skin_female) VALUES (?, ?, ?, ?, ?, ?, ?)', {
             job.name, g.grade, g.name, g.label, g.salary or 0, '{}', '{}'
         })
@@ -54,14 +54,14 @@ RegisterNetEvent('job_creator:openAdmin', function()
     local src = source
     local xPlayer = ESX.GetPlayerFromId(src)
     if not JC.IsAdmin(xPlayer) then
-        return JC.Notify(src, _('no_permission'))
+        return JC.Notify(src, L('no_permission'))
     end
     TriggerClientEvent('job_creator:openAdminUI', src, JC.GetAdminPayload())
 end)
 
 ESX.RegisterCommand(Config.OpenCommand, 'user', function(xPlayer)
     if not JC.IsAdmin(xPlayer) then
-        return JC.Notify(xPlayer.source, _('no_permission'))
+        return JC.Notify(xPlayer.source, L('no_permission'))
     end
     TriggerClientEvent('job_creator:openAdminUI', xPlayer.source, JC.GetAdminPayload())
 end, false, { help = 'Ouvrir le Job Creator' })
@@ -72,11 +72,11 @@ RegisterNetEvent('job_creator:saveJob', function(data)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not JC.IsAdmin(xPlayer) then return end
     if type(data) ~= 'table' or not data.name or not data.label then
-        return JC.Notify(src, _('invalid_data'))
+        return JC.Notify(src, L('invalid_data'))
     end
 
     local name = data.name:lower():gsub('%s+', '_'):gsub('[^%w_]', '')
-    if name == '' then return JC.Notify(src, _('invalid_data')) end
+    if name == '' then return JC.Notify(src, L('invalid_data')) end
 
     local exists = MySQL.single.await('SELECT id FROM jc_jobs WHERE name = ?', { name })
     local actions = json.encode(data.actions or {})
@@ -98,7 +98,7 @@ RegisterNetEvent('job_creator:saveJob', function(data)
             blipCoords,
             name,
         })
-        JC.Notify(src, _('job_updated', data.label))
+        JC.Notify(src, L('job_updated', data.label))
         JC.Log('Job mis à jour', ('**%s** a modifié `%s`'):format(xPlayer.getName(), name))
     else
         MySQL.insert.await([[
@@ -122,21 +122,21 @@ RegisterNetEvent('job_creator:saveJob', function(data)
             }
         end
 
-        for _, g in ipairs(data.grades) do
+        for _i, g in ipairs(data.grades) do
             MySQL.insert.await('INSERT INTO jc_grades (job_name, grade, name, label, salary, permissions) VALUES (?, ?, ?, ?, ?, ?)', {
                 name, g.grade, g.name, g.label, g.salary or 0, json.encode(g.permissions or {})
             })
         end
 
         ensureSociety(name)
-        JC.Notify(src, _('job_created', data.label))
+        JC.Notify(src, L('job_created', data.label))
         JC.Log('Job créé', ('**%s** a créé `%s`'):format(xPlayer.getName(), name))
     end
 
     -- Sync grades if provided on update
     if exists and data.grades then
         MySQL.query.await('DELETE FROM jc_grades WHERE job_name = ?', { name })
-        for _, g in ipairs(data.grades) do
+        for _i, g in ipairs(data.grades) do
             MySQL.insert.await('INSERT INTO jc_grades (job_name, grade, name, label, salary, permissions) VALUES (?, ?, ?, ?, ?, ?)', {
                 name, g.grade, g.name, g.label, g.salary or 0, json.encode(g.permissions or {})
             })
@@ -181,7 +181,7 @@ RegisterNetEvent('job_creator:deleteJob', function(jobName)
         if ESX.RefreshJobs then ESX.RefreshJobs() end
     end)
 
-    JC.Notify(src, _('job_deleted', jobName))
+    JC.Notify(src, L('job_deleted', jobName))
     JC.Log('Job supprimé', ('**%s** a supprimé `%s`'):format(xPlayer.getName(), jobName))
     JC.LoadAll()
 end)
@@ -211,7 +211,7 @@ RegisterNetEvent('job_creator:saveGrade', function(data)
     if JC.Jobs[data.job_name] then
         syncEsxJob(JC.Jobs[data.job_name])
     end
-    JC.Notify(src, _('grade_saved'))
+    JC.Notify(src, L('grade_saved'))
 end)
 
 RegisterNetEvent('job_creator:deleteGrade', function(id)
@@ -234,7 +234,7 @@ RegisterNetEvent('job_creator:setPlayerJob', function(targetId, jobName, grade)
     if not target then return end
     if not JC.Jobs[jobName] then return end
     target.setJob(jobName, tonumber(grade) or 0)
-    JC.Notify(src, _('employee_hired'))
+    JC.Notify(src, L('employee_hired'))
 end)
 
 --- Reload

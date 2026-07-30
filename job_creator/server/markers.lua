@@ -5,7 +5,7 @@ RegisterNetEvent('job_creator:saveMarker', function(data)
     local xPlayer = ESX.GetPlayerFromId(src)
     if not JC.IsAdmin(xPlayer) then return end
     if type(data) ~= 'table' or not data.job_name or not data.type or not data.coords then
-        return JC.Notify(src, _('invalid_data'))
+        return JC.Notify(src, L('invalid_data'))
     end
 
     local coords = json.encode(data.coords)
@@ -38,7 +38,7 @@ RegisterNetEvent('job_creator:saveMarker', function(data)
         })
     end
 
-    JC.Notify(src, _('marker_saved'))
+    JC.Notify(src, L('marker_saved'))
     JC.LoadAll()
 end)
 
@@ -57,7 +57,7 @@ RegisterNetEvent('job_creator:deleteMarker', function(id)
         end)
     end
 
-    JC.Notify(src, _('marker_deleted'))
+    JC.Notify(src, L('marker_deleted'))
     JC.LoadAll()
 end)
 
@@ -132,7 +132,7 @@ RegisterNetEvent('job_creator:saveOutfit', function(data)
         })
     end
     JC.LoadAll()
-    JC.Notify(src, _('outfit_saved'))
+    JC.Notify(src, L('outfit_saved'))
 end)
 
 RegisterNetEvent('job_creator:deleteOutfit', function(id)
@@ -228,7 +228,7 @@ RegisterNetEvent('job_creator:harvest', function(markerId)
         xPlayer = ESX.GetPlayerFromId(src)
         if not xPlayer then return end
         xPlayer.addInventoryItem(item, count)
-        JC.Notify(src, _('harvested', count, data.label or item))
+        JC.Notify(src, L('harvested', count, data.label or item))
     end)
 end)
 
@@ -248,7 +248,7 @@ RegisterNetEvent('job_creator:process', function(markerId)
 
     local inv = xPlayer.getInventoryItem(need)
     if not inv or (inv.count or 0) < needCount then
-        return JC.Notify(src, _('missing_items'))
+        return JC.Notify(src, L('missing_items'))
     end
 
     busy[src] = true
@@ -258,11 +258,11 @@ RegisterNetEvent('job_creator:process', function(markerId)
         if not xPlayer then return end
         inv = xPlayer.getInventoryItem(need)
         if not inv or (inv.count or 0) < needCount then
-            return JC.Notify(src, _('missing_items'))
+            return JC.Notify(src, L('missing_items'))
         end
         xPlayer.removeInventoryItem(need, needCount)
         xPlayer.addInventoryItem(give, giveCount)
-        JC.Notify(src, _('processed'))
+        JC.Notify(src, L('processed'))
     end)
 end)
 
@@ -281,7 +281,7 @@ RegisterNetEvent('job_creator:sell', function(markerId)
 
     local inv = xPlayer.getInventoryItem(item)
     if not inv or (inv.count or 0) < count then
-        return JC.Notify(src, _('missing_items'))
+        return JC.Notify(src, L('missing_items'))
     end
 
     busy[src] = true
@@ -291,7 +291,7 @@ RegisterNetEvent('job_creator:sell', function(markerId)
         if not xPlayer then return end
         inv = xPlayer.getInventoryItem(item)
         if not inv or (inv.count or 0) < count then
-            return JC.Notify(src, _('missing_items'))
+            return JC.Notify(src, L('missing_items'))
         end
         xPlayer.removeInventoryItem(item, count)
         local black = data.black_money == true
@@ -310,7 +310,7 @@ RegisterNetEvent('job_creator:sell', function(markerId)
             end
         end
 
-        JC.Notify(src, _('sold', price))
+        JC.Notify(src, L('sold', price))
     end)
 end)
 
@@ -323,10 +323,10 @@ RegisterNetEvent('job_creator:craft', function(craftId)
     if xPlayer.job.name ~= craft.job_name then return end
     if (xPlayer.job.grade or 0) < (craft.min_grade or 0) then return end
 
-    for _, ing in ipairs(craft.ingredients or {}) do
+    for _i, ing in ipairs(craft.ingredients or {}) do
         local inv = xPlayer.getInventoryItem(ing.item)
         if not inv or (inv.count or 0) < (ing.count or 1) then
-            return JC.Notify(src, _('missing_items'))
+            return JC.Notify(src, L('missing_items'))
         end
     end
 
@@ -335,17 +335,17 @@ RegisterNetEvent('job_creator:craft', function(craftId)
         busy[src] = nil
         xPlayer = ESX.GetPlayerFromId(src)
         if not xPlayer then return end
-        for _, ing in ipairs(craft.ingredients or {}) do
+        for _i, ing in ipairs(craft.ingredients or {}) do
             local inv = xPlayer.getInventoryItem(ing.item)
             if not inv or (inv.count or 0) < (ing.count or 1) then
-                return JC.Notify(src, _('missing_items'))
+                return JC.Notify(src, L('missing_items'))
             end
         end
-        for _, ing in ipairs(craft.ingredients or {}) do
+        for _i, ing in ipairs(craft.ingredients or {}) do
             xPlayer.removeInventoryItem(ing.item, ing.count or 1)
         end
         xPlayer.addInventoryItem(craft.result_item, craft.result_count or 1)
-        JC.Notify(src, _('crafted'))
+        JC.Notify(src, L('crafted'))
     end)
 end)
 
@@ -359,7 +359,7 @@ RegisterNetEvent('job_creator:buyShopItem', function(itemId)
 
     local price = shop.price or 0
     if xPlayer.getMoney() < price then
-        return JC.Notify(src, _('no_money'))
+        return JC.Notify(src, L('no_money'))
     end
 
     xPlayer.removeMoney(price)
@@ -368,7 +368,7 @@ RegisterNetEvent('job_creator:buyShopItem', function(itemId)
     else
         xPlayer.addInventoryItem(shop.item, 1)
     end
-    JC.Notify(src, _('bought', shop.label))
+    JC.Notify(src, L('bought', shop.label))
 end)
 
 RegisterNetEvent('job_creator:wash', function(markerId, amount)
@@ -382,7 +382,7 @@ RegisterNetEvent('job_creator:wash', function(markerId, amount)
 
     local black = xPlayer.getAccount('black_money')
     if not black or black.money < amount then
-        return JC.Notify(src, _('no_money'))
+        return JC.Notify(src, L('no_money'))
     end
 
     local fee = tonumber((marker.data or {}).fee_percent) or 30
@@ -390,7 +390,7 @@ RegisterNetEvent('job_creator:wash', function(markerId, amount)
 
     xPlayer.removeAccountMoney('black_money', amount)
     xPlayer.addMoney(clean)
-    JC.Notify(src, _('washed', clean))
+    JC.Notify(src, L('washed', clean))
 end)
 
 --- Stash ESX simple
@@ -446,7 +446,7 @@ RegisterNetEvent('job_creator:stashDeposit', function(stashId, itemName, count)
     xPlayer.removeInventoryItem(itemName, count)
     local items = json.decode(row.items or '[]') or {}
     local found = false
-    for _, it in ipairs(items) do
+    for _i, it in ipairs(items) do
         if it.name == itemName then
             it.count = (it.count or 0) + count
             found = true

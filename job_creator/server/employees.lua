@@ -10,7 +10,7 @@ RegisterNetEvent('job_creator:getEmployees', function(jobName)
     local xPlayers = ESX.GetExtendedPlayers and ESX.GetExtendedPlayers('job', jobName) or {}
 
     if type(xPlayers) == 'table' then
-        for _, xp in pairs(xPlayers) do
+        for _i, xp in pairs(xPlayers) do
             online[#online + 1] = {
                 id = xp.source,
                 identifier = xp.identifier,
@@ -27,8 +27,8 @@ RegisterNetEvent('job_creator:getEmployees', function(jobName)
     pcall(function()
         local rows = MySQL.query.await('SELECT identifier, firstname, lastname, job_grade FROM users WHERE job = ?', { jobName }) or {}
         local onlineIds = {}
-        for _, e in ipairs(online) do onlineIds[e.identifier] = true end
-        for _, r in ipairs(rows) do
+        for _i, e in ipairs(online) do onlineIds[e.identifier] = true end
+        for _i, r in ipairs(rows) do
             if not onlineIds[r.identifier] then
                 offline[#offline + 1] = {
                     identifier = r.identifier,
@@ -56,12 +56,12 @@ RegisterNetEvent('job_creator:hire', function(targetId, jobName, grade)
 
     local target = ESX.GetPlayerFromId(tonumber(targetId))
     if not target then
-        return JC.Notify(src, _('no_player_nearby'))
+        return JC.Notify(src, L('no_player_nearby'))
     end
 
     grade = tonumber(grade) or 0
     target.setJob(jobName, grade)
-    JC.Notify(src, _('employee_hired'))
+    JC.Notify(src, L('employee_hired'))
     JC.Notify(target.source, ('Tu as été recruté : %s'):format((JC.Jobs[jobName] and JC.Jobs[jobName].label) or jobName))
 end)
 
@@ -76,10 +76,10 @@ RegisterNetEvent('job_creator:fire', function(targetId, identifier)
         local target = ESX.GetPlayerFromId(tonumber(targetId))
         if target and target.job.name == jobName then
             if target.job.grade >= xPlayer.job.grade and target.source ~= src then
-                return JC.Notify(src, _('no_permission'))
+                return JC.Notify(src, L('no_permission'))
             end
             target.setJob('unemployed', 0)
-            JC.Notify(src, _('employee_fired'))
+            JC.Notify(src, L('employee_fired'))
             JC.Notify(target.source, 'Tu as été licencié.')
             return
         end
@@ -89,7 +89,7 @@ RegisterNetEvent('job_creator:fire', function(targetId, identifier)
         MySQL.update.await('UPDATE users SET job = ?, job_grade = 0 WHERE identifier = ? AND job = ?', {
             'unemployed', identifier, jobName
         })
-        JC.Notify(src, _('employee_fired'))
+        JC.Notify(src, L('employee_fired'))
     end
 end)
 
@@ -102,14 +102,14 @@ RegisterNetEvent('job_creator:setGrade', function(targetId, identifier, grade)
 
     grade = tonumber(grade) or 0
     if grade >= xPlayer.job.grade then
-        return JC.Notify(src, _('no_permission'))
+        return JC.Notify(src, L('no_permission'))
     end
 
     if targetId then
         local target = ESX.GetPlayerFromId(tonumber(targetId))
         if target and target.job.name == jobName then
             target.setJob(jobName, grade)
-            JC.Notify(src, _('employee_promoted'))
+            JC.Notify(src, L('employee_promoted'))
             return
         end
     end
@@ -118,7 +118,7 @@ RegisterNetEvent('job_creator:setGrade', function(targetId, identifier, grade)
         MySQL.update.await('UPDATE users SET job_grade = ? WHERE identifier = ? AND job = ?', {
             grade, identifier, jobName
         })
-        JC.Notify(src, _('employee_promoted'))
+        JC.Notify(src, L('employee_promoted'))
     end
 end)
 
@@ -131,7 +131,7 @@ RegisterNetEvent('job_creator:getNearbyPlayers', function()
     local coords = GetEntityCoords(ped)
     local nearby = {}
 
-    for _, id in ipairs(ESX.GetPlayers()) do
+    for _i, id in ipairs(ESX.GetPlayers()) do
         id = tonumber(id)
         if id ~= src then
             local tPed = GetPlayerPed(id)

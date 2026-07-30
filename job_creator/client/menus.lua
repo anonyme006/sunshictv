@@ -16,7 +16,7 @@ end
 
 function JC_C.OpenShop(marker)
     local items = {}
-    for _, s in pairs(JC_C.Shops) do
+    for _i, s in pairs(JC_C.Shops) do
         if s.job_name == marker.job_name and (not s.marker_id or s.marker_id == marker.id) then
             local job = JC_C.GetJob()
             if job and (job.grade or 0) >= (s.min_grade or 0) then
@@ -29,7 +29,7 @@ end
 
 function JC_C.OpenCraft(marker)
     local list = {}
-    for _, c in pairs(JC_C.Crafts) do
+    for _i, c in pairs(JC_C.Crafts) do
         if c.job_name == marker.job_name and (not c.marker_id or c.marker_id == marker.id) then
             local job = JC_C.GetJob()
             if job and (job.grade or 0) >= (c.min_grade or 0) then
@@ -54,7 +54,7 @@ function JC_C.OpenActionsMenu()
     if not job or not JC_C.Jobs[job.name] then return end
     local actions = JC_C.Jobs[job.name].actions or {}
     local list = {}
-    for _, a in ipairs(Config.DefaultActions) do
+    for _i, a in ipairs(Config.DefaultActions) do
         if actions[a.id] then
             list[#list + 1] = a
         end
@@ -142,7 +142,7 @@ RegisterNUICallback('actionDo', function(data, cb)
     elseif action == 'handcuff' or action == 'escort' or action == 'putinveh' or action == 'outveh' or action == 'search' or action == 'identity' then
         local target = JC_C.GetClosestPlayer(2.5)
         if not target then
-            JC_C.Notify(_('no_player_nearby'))
+            JC_C.Notify(L('no_player_nearby'))
             cb({ ok = false })
             return
         end
@@ -179,7 +179,7 @@ function JC_C.GetClosestPlayer(maxDist)
     local ped = PlayerPedId()
     local coords = GetEntityCoords(ped)
     local closest, closestDist = nil, maxDist or 2.5
-    for _, pid in ipairs(players) do
+    for _i, pid in ipairs(players) do
         local tp = GetPlayerPed(pid)
         if tp ~= ped then
             local dist = #(coords - GetEntityCoords(tp))
@@ -235,7 +235,7 @@ RegisterNetEvent('job_creator:putInVehicle', function()
         veh = ESX.Game.GetClosestVehicle()
     else
         local closestDist = 6.0
-        for _, v in ipairs(GetGamePool('CVehicle')) do
+        for _i, v in ipairs(GetGamePool('CVehicle')) do
             local dist = #(coords - GetEntityCoords(v))
             if dist < closestDist then
                 closestDist = dist

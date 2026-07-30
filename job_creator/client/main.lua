@@ -9,7 +9,7 @@ JC_C.OnDuty = true
 JC_C.Blips = {}
 JC_C.AdminOpen = false
 
-function _(key, ...)
+function L(key, ...)
     local str = (Locales[Config.Locale] and Locales[Config.Locale][key]) or key
     if ... then return str:format(...) end
     return str
@@ -56,7 +56,7 @@ CreateThread(function()
 end)
 
 function JC_C.RefreshBlips()
-    for _, b in pairs(JC_C.Blips) do
+    for _i, b in pairs(JC_C.Blips) do
         if DoesBlipExist(b) then RemoveBlip(b) end
     end
     JC_C.Blips = {}
@@ -79,7 +79,7 @@ function JC_C.RefreshBlips()
         end
     end
 
-    for _, m in pairs(JC_C.Markers) do
+    for _i, m in pairs(JC_C.Markers) do
         if m.blip_enabled and m.coords then
             if m.public or (job and job.name == m.job_name) then
                 local c = m.coords

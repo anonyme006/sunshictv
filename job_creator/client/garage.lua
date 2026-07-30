@@ -22,7 +22,7 @@ local function markerToOxData(marker)
 
     -- Spawns additionnels dans data.spawns (liste)
     if marker.data and type(marker.data.spawns) == 'table' then
-        for _, s in ipairs(marker.data.spawns) do
+        for _i, s in ipairs(marker.data.spawns) do
             if s.x then
                 spawns[#spawns + 1] = vec4(s.x + 0.0, s.y + 0.0, s.z + 0.0, (s.w or 0.0) + 0.0)
             end
@@ -53,7 +53,7 @@ function JC_C.OpenGarage(marker)
     -- Fallback NUI
     local list = {}
     local job = JC_C.GetJob()
-    for _, v in pairs(JC_C.Vehicles) do
+    for _i, v in pairs(JC_C.Vehicles) do
         if v.job_name == marker.job_name and (not v.marker_id or v.marker_id == marker.id) then
             if job and (job.grade or 0) >= (v.min_grade or 0) then
                 list[#list + 1] = v
@@ -85,7 +85,7 @@ function JC_C.StoreVehicle(marker)
     if veh == 0 then
         local coords = GetEntityCoords(ped)
         local closest, closestDist = 0, 8.0
-        for _, v in ipairs(GetGamePool('CVehicle')) do
+        for _i, v in ipairs(GetGamePool('CVehicle')) do
             local dist = #(coords - GetEntityCoords(v))
             if dist < closestDist then
                 closestDist = dist
@@ -95,20 +95,20 @@ function JC_C.StoreVehicle(marker)
         veh = closest
     end
     if not veh or veh == 0 then
-        return JC_C.Notify(_('no_vehicle'))
+        return JC_C.Notify(L('no_vehicle'))
     end
 
     local maxDist = (marker.data and marker.data.radius) or 8.0
     local c = marker.coords
     if #(GetEntityCoords(veh) - vector3(c.x, c.y, c.z)) > maxDist then
-        return JC_C.Notify(_('no_vehicle'))
+        return JC_C.Notify(L('no_vehicle'))
     end
 
     TaskLeaveVehicle(ped, veh, 0)
     Wait(1200)
     SetEntityAsMissionEntity(veh, true, true)
     DeleteVehicle(veh)
-    JC_C.Notify(_('vehicle_stored'))
+    JC_C.Notify(L('vehicle_stored'))
 end
 
 function JC_C.SpawnJobVehicle(model, spawn, livery)
@@ -144,7 +144,7 @@ function JC_C.SpawnJobVehicle(model, spawn, livery)
     end
 
     TaskWarpPedIntoVehicle(ped, veh, -1)
-    JC_C.Notify(_('vehicle_spawned'))
+    JC_C.Notify(L('vehicle_spawned'))
 end
 
 RegisterNUICallback('garageSpawn', function(data, cb)

@@ -59,7 +59,7 @@ local function interact(marker)
             SetEntityCoords(PlayerPedId(), dest.x + 0.0, dest.y + 0.0, dest.z + 0.0, false, false, false, false)
             if dest.w then SetEntityHeading(PlayerPedId(), dest.w + 0.0) end
             DoScreenFadeIn(400)
-            JC_C.Notify(_('teleported'))
+            JC_C.Notify(L('teleported'))
         end
     elseif t == 'wash' then
         JC_C.OpenWash(marker)
@@ -72,7 +72,7 @@ CreateThread(function()
         local ped = PlayerPedId()
         local coords = GetEntityCoords(ped)
 
-        for _, m in pairs(JC_C.Markers) do
+        for _i, m in pairs(JC_C.Markers) do
             if m.enabled ~= false and m.coords and JC_C.HasJobAccess(m) then
                 local c = m.coords
                 local dist = #(coords - vector3(c.x + 0.0, c.y + 0.0, c.z + 0.0))
@@ -80,7 +80,7 @@ CreateThread(function()
                     sleep = 0
                     drawMarker(m)
                     if dist < Config.InteractDistance then
-                        JC_C.Help((_('press_interact')):format(m.label or m.type))
+                        JC_C.Help((L('press_interact')):format(m.label or m.type))
                         if IsControlJustReleased(0, 38) then -- E
                             interact(m)
                         end

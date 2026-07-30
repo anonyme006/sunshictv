@@ -57,12 +57,12 @@ RegisterNetEvent('job_creator:societyDeposit', function(jobName, amount)
     if not JC.HasPermission(xPlayer, 'deposit') and not JC.HasPermission(xPlayer, 'boss') then return end
 
     if xPlayer.getMoney() < amount then
-        return JC.Notify(src, _('no_money'))
+        return JC.Notify(src, L('no_money'))
     end
 
     xPlayer.removeMoney(amount)
     setSocietyMoney(jobName, getSocietyMoney(jobName) + amount)
-    JC.Notify(src, _('society_deposit', amount))
+    JC.Notify(src, L('society_deposit', amount))
     TriggerClientEvent('job_creator:societyData', src, { job = jobName, money = getSocietyMoney(jobName) })
 end)
 
@@ -76,12 +76,12 @@ RegisterNetEvent('job_creator:societyWithdraw', function(jobName, amount)
 
     local current = getSocietyMoney(jobName)
     if current < amount then
-        return JC.Notify(src, _('no_money'))
+        return JC.Notify(src, L('no_money'))
     end
 
     setSocietyMoney(jobName, current - amount)
     xPlayer.addMoney(amount)
-    JC.Notify(src, _('society_withdraw', amount))
+    JC.Notify(src, L('society_withdraw', amount))
     TriggerClientEvent('job_creator:societyData', src, { job = jobName, money = getSocietyMoney(jobName) })
 end)
 
@@ -106,7 +106,7 @@ RegisterNetEvent('job_creator:toggleDuty', function()
     end
 
     Player(src).state:set('jc_duty', onDuty, true)
-    JC.Notify(src, onDuty and _('on_duty') or _('off_duty'))
+    JC.Notify(src, onDuty and L('on_duty') or L('off_duty'))
     TriggerClientEvent('job_creator:dutyChanged', src, onDuty)
 end)
 

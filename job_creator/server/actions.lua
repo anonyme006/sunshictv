@@ -13,7 +13,7 @@ RegisterNetEvent('job_creator:bill', function(targetId, amount, reason)
 
     local target = ESX.GetPlayerFromId(tonumber(targetId))
     if not target then
-        return JC.Notify(src, _('no_player_nearby'))
+        return JC.Notify(src, L('no_player_nearby'))
     end
 
     -- Facture ESX billing si dispo
@@ -26,12 +26,12 @@ RegisterNetEvent('job_creator:bill', function(targetId, amount, reason)
             target.removeMoney(amount)
             TriggerEvent('job_creator:addSocietyMoney', xPlayer.job.name, amount)
         else
-            return JC.Notify(src, _('no_money'))
+            return JC.Notify(src, L('no_money'))
         end
     end
 
-    JC.Notify(src, _('bill_sent', amount))
-    JC.Notify(target.source, _('bill_received', amount))
+    JC.Notify(src, L('bill_sent', amount))
+    JC.Notify(target.source, L('bill_received', amount))
 end)
 
 RegisterNetEvent('job_creator:handcuff', function(targetId)
@@ -42,12 +42,12 @@ RegisterNetEvent('job_creator:handcuff', function(targetId)
 
     local target = tonumber(targetId)
     if not target or not GetPlayerPed(target) then
-        return JC.Notify(src, _('no_player_nearby'))
+        return JC.Notify(src, L('no_player_nearby'))
     end
 
     handcuffed[target] = not handcuffed[target]
     TriggerClientEvent('job_creator:setHandcuff', target, handcuffed[target])
-    JC.Notify(src, handcuffed[target] and _('handcuffed') or _('unhandcuffed'))
+    JC.Notify(src, handcuffed[target] and L('handcuffed') or L('unhandcuffed'))
 end)
 
 RegisterNetEvent('job_creator:escort', function(targetId)
@@ -88,7 +88,7 @@ RegisterNetEvent('job_creator:search', function(targetId)
 
     local items = {}
     local inv = target.getInventory and target.getInventory() or {}
-    for _, it in pairs(inv) do
+    for _i, it in pairs(inv) do
         if type(it) == 'table' and (it.count or 0) > 0 then
             items[#items + 1] = { name = it.name, label = it.label or it.name, count = it.count }
         end
@@ -96,7 +96,7 @@ RegisterNetEvent('job_creator:search', function(targetId)
 
     local weapons = {}
     local loadout = target.getLoadout and target.getLoadout() or {}
-    for _, w in pairs(loadout) do
+    for _i, w in pairs(loadout) do
         weapons[#weapons + 1] = { name = w.name, label = w.label or w.name, ammo = w.ammo or 0 }
     end
 

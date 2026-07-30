@@ -1,7 +1,7 @@
 function JC_C.OpenCloakroom(marker)
     local job = JC_C.GetJob()
     local outfits = {}
-    for _, o in pairs(JC_C.Outfits) do
+    for _i, o in pairs(JC_C.Outfits) do
         if o.job_name == marker.job_name and job and (job.grade or 0) >= (o.min_grade or 0) then
             outfits[#outfits + 1] = o
         end
@@ -26,11 +26,11 @@ RegisterNUICallback('cloakApply', function(data, cb)
         if ESX.TriggerServerCallback then
             ESX.TriggerServerCallback('esx_skin:getPlayerSkin', function(skin)
                 TriggerEvent('skinchanger:loadSkin', skin)
-                JC_C.Notify(_('civilian_outfit'))
+                JC_C.Notify(L('civilian_outfit'))
             end)
         else
             TriggerEvent('skinchanger:loadSkin')
-            JC_C.Notify(_('civilian_outfit'))
+            JC_C.Notify(L('civilian_outfit'))
         end
         cb({ ok = true })
         return
@@ -40,7 +40,7 @@ RegisterNUICallback('cloakApply', function(data, cb)
     if outfit and outfit.skin then
         TriggerEvent('skinchanger:getSkin', function(skin)
             TriggerEvent('skinchanger:loadClothes', skin, outfit.skin)
-            JC_C.Notify(_('outfit_applied'))
+            JC_C.Notify(L('outfit_applied'))
         end)
     end
     cb({ ok = true })
