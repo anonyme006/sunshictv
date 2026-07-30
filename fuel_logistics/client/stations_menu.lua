@@ -26,14 +26,14 @@ end
 --- Construit et affiche le menu (données fraîches serveur)
 function OpenStationsLiveMenu(keepOpen)
     if not IsFuelJob() then
-        return Notify(_('need_job'), 'error')
+        return Notify(L('need_job'), 'error')
     end
 
     local stations = lib.callback.await('fuel_logistics:getStations', false) or {}
     local companies = lib.callback.await('fuel_logistics:getCompanies', false) or {}
 
     -- Sync local pour les blips / livraisons
-    for _, s in ipairs(stations) do
+    for _i, s in ipairs(stations) do
         FL_C.Stations[tostring(s.id)] = {
             id = s.id,
             name = s.name,
@@ -73,7 +73,7 @@ function OpenStationsLiveMenu(keepOpen)
             return (a.percent or 0) < (b.percent or 0) -- plus vides en premier
         end)
 
-        for _, s in ipairs(stations) do
+        for _i, s in ipairs(stations) do
             local pct = s.percent or 0
             local iconColor, scheme = percentColor(pct)
             local status = pct < 20 and '⚠ CRITIQUE' or (pct < 50 and 'Faible' or 'OK')
@@ -114,7 +114,7 @@ function OpenStationsLiveMenu(keepOpen)
         table.sort(companies, function(a, b)
             return (a.percent or 0) < (b.percent or 0)
         end)
-        for _, c in ipairs(companies) do
+        for _i, c in ipairs(companies) do
             local pct = c.percent or 0
             local iconColor, scheme = percentColor(pct)
             opts[#opts + 1] = {
@@ -218,7 +218,7 @@ function StartStationsLiveRefresh()
             elseif not lib.getOpenContextMenu then
                 -- ox_lib sans getOpenContextMenu : on rafraîchit silencieusement les données locales
                 local stations = lib.callback.await('fuel_logistics:getStations', false) or {}
-                for _, s in ipairs(stations) do
+                for _i, s in ipairs(stations) do
                     if FL_C.Stations[tostring(s.id)] then
                         FL_C.Stations[tostring(s.id)].level = s.level
                         FL_C.Stations[tostring(s.id)].capacity = s.capacity

@@ -1,5 +1,5 @@
 function StartRefine()
-    if not CanPerm('refine') then return Notify(_('no_permission'), 'error') end
+    if not CanPerm('refine') then return Notify(L('no_permission'), 'error') end
 
     local input = lib.inputDialog('Raffinage', {
         {
@@ -17,20 +17,20 @@ function StartRefine()
 
     local cycles = math.floor(tonumber(input[1]) or 1)
     for i = 1, cycles do
-        local ok = DoProgress(Config.Refine.duration, _('progress_refine') .. (' (%d/%d)'):format(i, cycles), Config.Refine.anim)
+        local ok = DoProgress(Config.Refine.duration, L('progress_refine') .. (' (%d/%d)'):format(i, cycles), Config.Refine.anim)
         if not ok then
-            Notify(_('cancelled'), 'inform')
+            Notify(L('cancelled'), 'inform')
             break
         end
 
         local result = lib.callback.await('fuel_logistics:refine', false)
         if not result or not result.ok then
             local err = result and result.error
-            if err == 'missing' then Notify(_('missing_items'), 'error')
-            elseif err == 'inventory' then Notify(_('inventory_full'), 'error')
-            else Notify(_('cancelled'), 'error') end
+            if err == 'missing' then Notify(L('missing_items'), 'error')
+            elseif err == 'inventory' then Notify(L('inventory_full'), 'error')
+            else Notify(L('cancelled'), 'error') end
             break
         end
-        Notify(_('refined', result.count), 'success')
+        Notify(L('refined', result.count), 'success')
     end
 end

@@ -29,7 +29,7 @@ lib.callback.register('fuel_logistics:bossStats', function(source)
 
     local employees = {}
     local xPlayers = FL.ESX.GetExtendedPlayers and FL.ESX.GetExtendedPlayers('job', Config.JobName) or {}
-    for _, xp in pairs(xPlayers) do
+    for _i, xp in pairs(xPlayers) do
         employees[#employees + 1] = {
             id = xp.source,
             name = xp.getName and xp.getName() or GetPlayerName(xp.source),
@@ -39,7 +39,7 @@ lib.callback.register('fuel_logistics:bossStats', function(source)
     end
 
     local stations = {}
-    for _, s in pairs(FL.Stations) do
+    for _i, s in pairs(FL.Stations) do
         stations[#stations + 1] = {
             id = s.id, name = s.name, level = s.level, capacity = s.capacity,
             percent = s.capacity > 0 and FL.Round(s.level / s.capacity * 100, 1) or 0,
@@ -47,7 +47,7 @@ lib.callback.register('fuel_logistics:bossStats', function(source)
     end
 
     local companies = {}
-    for _, c in pairs(FL.Companies) do
+    for _i, c in pairs(FL.Companies) do
         companies[#companies + 1] = {
             id = c.id, label = c.label, job_name = c.job_name,
             level = c.level, capacity = c.capacity,

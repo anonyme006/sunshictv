@@ -7,7 +7,7 @@ CreateThread(function()
 
     FL.ESX.RegisterCommand('fuelboss', 'user', function(xPlayer)
         if not FL.Can(xPlayer, 'boss') then
-            return FL.Notify(xPlayer.source, _('no_permission'), 'error')
+            return FL.Notify(xPlayer.source, L('no_permission'), 'error')
         end
         TriggerClientEvent('fuel_logistics:openBoss', xPlayer.source)
     end, false, { help = 'Menu patron Fuel Logistics' })
@@ -39,7 +39,7 @@ lib.callback.register('fuel_logistics:adminCreateStation', function(source, data
 
     -- Notifie les employés qu'une station a été ajoutée
     local xPlayers = FL.ESX.GetExtendedPlayers and FL.ESX.GetExtendedPlayers('job', Config.JobName) or {}
-    for _, xp in pairs(xPlayers) do
+    for _i, xp in pairs(xPlayers) do
         FL.Notify(xp.source, ('Nouvelle station : %s'):format(data.name), 'inform')
         TriggerClientEvent('fuel_logistics:stationCreated', xp.source, { id = id, name = data.name })
     end

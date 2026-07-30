@@ -13,7 +13,7 @@ function FL.InitDatabase()
 
     local count = MySQL.scalar.await('SELECT COUNT(*) FROM fl_stations') or 0
     if count == 0 and Config.DefaultStations then
-        for _, s in ipairs(Config.DefaultStations) do
+        for _i, s in ipairs(Config.DefaultStations) do
             MySQL.insert.await([[
                 INSERT INTO fl_stations (name, coords, capacity, level, buy_price, consumption, owner_job)
                 VALUES (?, ?, ?, ?, ?, ?, ?)

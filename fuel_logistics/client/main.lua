@@ -7,7 +7,7 @@ FL_C.Trailer = nil
 
 function Notify(desc, nType)
     lib.notify({
-        title = _('notify_title'),
+        title = L('notify_title'),
         description = desc,
         type = nType or 'inform',
         position = 'top-right',
@@ -46,7 +46,7 @@ function DoProgress(duration, label, anim)
 end
 
 function ClearJobBlips()
-    for _, b in pairs(FL_C.Blips) do
+    for _i, b in pairs(FL_C.Blips) do
         if DoesBlipExist(b) then RemoveBlip(b) end
     end
     FL_C.Blips = {}
@@ -73,13 +73,13 @@ function RefreshBlips()
     if Config.JobBlip and Config.JobBlip.enabled then
         AddBlip(Config.JobBlip.coords, Config.JobBlip, Config.JobBlip.label)
     end
-    for _, p in ipairs(Config.HarvestPoints) do
+    for _i, p in ipairs(Config.HarvestPoints) do
         AddBlip(p.coords, p.blip, p.label)
     end
     AddBlip(Config.RefinePoint.coords, Config.RefinePoint.blip, Config.RefinePoint.label)
     AddBlip(Config.Export.coords, Config.Export.blip, 'Export carburant')
 
-    for _, s in pairs(FL_C.Stations) do
+    for _i, s in pairs(FL_C.Stations) do
         if s.coords then
             AddBlip(vec3(s.coords.x, s.coords.y, s.coords.z), {
                 enabled = true, sprite = 361, color = 1, scale = 0.55,
@@ -119,14 +119,14 @@ end)
 
 function SetupStaticTargets()
     -- Harvest
-    for _, p in ipairs(Config.HarvestPoints) do
+    for _i, p in ipairs(Config.HarvestPoints) do
         exports.ox_target:addSphereZone({
             coords = p.coords,
             radius = p.radius or 2.0,
             options = {{
                 name = 'fl_harvest_' .. p.id,
                 icon = 'fa-solid fa-oil-well',
-                label = _('target_harvest'),
+                label = L('target_harvest'),
                 canInteract = function() return CanPerm('harvest') end,
                 onSelect = function() StartHarvest(p.id) end,
             }},
@@ -140,7 +140,7 @@ function SetupStaticTargets()
         options = {{
             name = 'fl_refine',
             icon = 'fa-solid fa-industry',
-            label = _('target_refine'),
+            label = L('target_refine'),
             canInteract = function() return CanPerm('refine') end,
             onSelect = function() StartRefine() end,
         }},
@@ -153,7 +153,7 @@ function SetupStaticTargets()
         options = {{
             name = 'fl_stash',
             icon = 'fa-solid fa-warehouse',
-            label = _('target_stash'),
+            label = L('target_stash'),
             canInteract = function() return CanPerm('stash') end,
             onSelect = function()
                 exports.ox_inventory:openInventory('stash', Config.Stash.id)
@@ -169,7 +169,7 @@ function SetupStaticTargets()
             {
                 name = 'fl_boss',
                 icon = 'fa-solid fa-briefcase',
-                label = _('target_boss'),
+                label = L('target_boss'),
                 canInteract = function() return CanPerm('boss') end,
                 onSelect = function() OpenBossMenu() end,
             },
@@ -191,7 +191,7 @@ function SetupStaticTargets()
             {
                 name = 'fl_truck_out',
                 icon = 'fa-solid fa-truck',
-                label = _('target_garage'),
+                label = L('target_garage'),
                 canInteract = function() return CanPerm('deliver') and not FL_C.Truck end,
                 onSelect = function() SpawnDeliveryTruck() end,
             },
@@ -205,7 +205,7 @@ function SetupStaticTargets()
             {
                 name = 'fl_truck_load',
                 icon = 'fa-solid fa-gas-pump',
-                label = _('target_load'),
+                label = L('target_load'),
                 canInteract = function() return CanPerm('deliver') end,
                 onSelect = function() LoadTruckMenu() end,
             },
@@ -219,7 +219,7 @@ function SetupStaticTargets()
         options = {{
             name = 'fl_export',
             icon = 'fa-solid fa-ship',
-            label = _('target_export'),
+            label = L('target_export'),
             canInteract = function() return CanPerm('export') end,
             onSelect = function() StartExport() end,
         }},

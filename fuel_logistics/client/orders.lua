@@ -1,10 +1,10 @@
 function OpenOrdersMenu()
-    if not IsFuelJob() then return Notify(_('need_job'), 'error') end
+    if not IsFuelJob() then return Notify(L('need_job'), 'error') end
 
     local orders = lib.callback.await('fuel_logistics:getOrders', false) or {}
     local opts = {}
 
-    for _, o in ipairs(orders) do
+    for _i, o in ipairs(orders) do
         local color = o.status == 'pending' and '#e6b35a' or '#3d8bfd'
         opts[#opts + 1] = {
             title = ('#%d — %s'):format(o.id, o.target_name or 'Cible'),
@@ -41,7 +41,7 @@ function OpenOrderActions(order)
             onSelect = function()
                 local res = lib.callback.await('fuel_logistics:acceptOrder', false, order.id)
                 if res and res.ok then
-                    Notify(_('order_accepted'), 'success')
+                    Notify(L('order_accepted'), 'success')
                     -- Waypoint si station connue
                     local target = FL_C.Stations[tostring(order.target_id)] or FL_C.Companies[tostring(order.target_id)]
                     if target and target.coords then
@@ -58,7 +58,7 @@ function OpenOrderActions(order)
             iconColor = '#f07178',
             onSelect = function()
                 lib.callback.await('fuel_logistics:declineOrder', false, order.id)
-                Notify(_('order_declined'), 'inform')
+                Notify(L('order_declined'), 'inform')
             end,
         }
     else
@@ -94,8 +94,8 @@ end
 RegisterNetEvent('fuel_logistics:newOrder', function(data)
     if not IsFuelJob() then return end
     lib.notify({
-        title = _('notify_title'),
-        description = _('order_new', data.target_name or '?', data.liters or 0),
+        title = L('notify_title'),
+        description = L('order_new', data.target_name or '?', data.liters or 0),
         type = 'warning',
         duration = 10000,
         position = 'top-right',

@@ -16,7 +16,7 @@ function OpenAdminMenu()
         },
     }
 
-    for _, s in ipairs(stations) do
+    for _i, s in ipairs(stations) do
         opts[#opts + 1] = {
             title = s.name,
             description = ('#%d · %d/%d L · %.1f%%'):format(s.id, math.floor(s.level), s.capacity, s.percent),
@@ -59,14 +59,14 @@ function CreateStationHere()
     })
 
     if result and result.ok then
-        Notify(_('station_created'), 'success')
+        Notify(L('station_created'), 'success')
         -- Ouvre le tableau live pour voir la nouvelle station
         Wait(300)
         if IsFuelJob() then
             OpenStationsLiveMenu(true)
         end
     else
-        Notify(_('no_permission'), 'error')
+        Notify(L('no_permission'), 'error')
     end
 end
 
@@ -91,7 +91,7 @@ function CreateCompanyTankHere()
     })
 
     if result and result.ok then
-        Notify(_('company_tank_bought'), 'success')
+        Notify(L('company_tank_bought'), 'success')
     else
         Notify('Échec', 'error')
     end
@@ -127,7 +127,7 @@ function EditStation(s)
                         data.coords = { x = FL.Round(c.x, 2), y = FL.Round(c.y, 2), z = FL.Round(c.z, 2) }
                     end
                     local res = lib.callback.await('fuel_logistics:adminUpdateStation', false, data)
-                    if res and res.ok then Notify(_('station_updated'), 'success') end
+                    if res and res.ok then Notify(L('station_updated'), 'success') end
                 end,
             },
             {
@@ -143,7 +143,7 @@ function EditStation(s)
                     })
                     if conf ~= 'confirm' then return end
                     local res = lib.callback.await('fuel_logistics:adminDeleteStation', false, s.id)
-                    if res and res.ok then Notify(_('station_deleted'), 'success') end
+                    if res and res.ok then Notify(L('station_deleted'), 'success') end
                 end,
             },
         },

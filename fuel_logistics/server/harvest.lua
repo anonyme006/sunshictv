@@ -7,7 +7,7 @@ lib.callback.register('fuel_logistics:harvest', function(source, pointId)
     if FL.IsBusy(src) then return { ok = false, error = 'busy' } end
 
     local point
-    for _, p in ipairs(Config.HarvestPoints) do
+    for _i, p in ipairs(Config.HarvestPoints) do
         if p.id == pointId then point = p break end
     end
     if not point then return { ok = false, error = 'invalid' } end

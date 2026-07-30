@@ -1,7 +1,7 @@
 function FL.LoadStations()
     FL.Stations = {}
     local rows = MySQL.query.await('SELECT * FROM fl_stations WHERE enabled = 1') or {}
-    for _, r in ipairs(rows) do
+    for _i, r in ipairs(rows) do
         FL.Stations[r.id] = {
             id = r.id,
             name = r.name,
@@ -62,7 +62,7 @@ lib.callback.register('fuel_logistics:getStations', function(source)
 
     -- Toujours depuis la mémoire à jour (inclut stations créées à chaud)
     local list = {}
-    for _, s in pairs(FL.Stations) do
+    for _i, s in pairs(FL.Stations) do
         list[#list + 1] = {
             id = s.id,
             name = s.name,

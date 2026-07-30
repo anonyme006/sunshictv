@@ -1,5 +1,5 @@
 function StartExport()
-    if not CanPerm('export') then return Notify(_('no_permission'), 'error') end
+    if not CanPerm('export') then return Notify(L('no_permission'), 'error') end
 
     local input = lib.inputDialog('Export carburant', {
         {
@@ -21,16 +21,16 @@ function StartExport()
     })
     if confirm ~= 'confirm' then return end
 
-    local ok = DoProgress(Config.Export.duration, _('progress_export'), Config.Export.anim)
-    if not ok then return Notify(_('cancelled'), 'inform') end
+    local ok = DoProgress(Config.Export.duration, L('progress_export'), Config.Export.anim)
+    if not ok then return Notify(L('cancelled'), 'inform') end
 
     local result = lib.callback.await('fuel_logistics:export', false, count)
     if not result or not result.ok then
         local err = result and result.error
-        if err == 'missing' then Notify(_('missing_items'), 'error')
-        else Notify(_('cancelled'), 'error') end
+        if err == 'missing' then Notify(L('missing_items'), 'error')
+        else Notify(L('cancelled'), 'error') end
         return
     end
 
-    Notify(_('exported', result.barrels, result.amount), 'success')
+    Notify(L('exported', result.barrels, result.amount), 'success')
 end
