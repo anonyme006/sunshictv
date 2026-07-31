@@ -7,7 +7,7 @@ local ESX = exports['es_extended']:getSharedObject()
 ---@type table<string, table>
 local JobGarageCache = {}
 
-local function _(key, ...)
+local function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then return str:format(...) end
     return str
@@ -70,7 +70,7 @@ end
 
 local function broadcastGarages()
     local list = {}
-    for _, g in pairs(JobGarageCache) do
+    for _i, g in pairs(JobGarageCache) do
         list[#list + 1] = g
     end
     table.sort(list, function(a, b) return (a.id or '') < (b.id or '') end)
@@ -80,7 +80,7 @@ end
 local function loadJobGarages()
     local rows = MySQL.query.await('SELECT * FROM ox_garage_job_garages') or {}
     JobGarageCache = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         JobGarageCache[row.id] = rowToGarage(row)
     end
     broadcastGarages()
@@ -207,7 +207,7 @@ end
 
 lib.callback.register('ox_garage:getJobGarages', function()
     local list = {}
-    for _, g in pairs(JobGarageCache) do
+    for _i, g in pairs(JobGarageCache) do
         list[#list + 1] = g
     end
     return list
@@ -261,7 +261,7 @@ lib.callback.register('ox_garage:adminListJobGarages', function(source)
     local xPlayer = ESX.GetPlayerFromId(source)
     if not isGarageAdmin(xPlayer) then return {} end
     local list = {}
-    for _, g in pairs(JobGarageCache) do
+    for _i, g in pairs(JobGarageCache) do
         list[#list + 1] = {
             id = g.id,
             job = g.job,
@@ -275,7 +275,7 @@ end)
 
 AddEventHandler('esx:playerLoaded', function(playerId)
     local list = {}
-    for _, g in pairs(JobGarageCache) do
+    for _i, g in pairs(JobGarageCache) do
         list[#list + 1] = g
     end
     TriggerClientEvent('ox_garage:syncJobGarages', playerId, list)
@@ -295,7 +295,7 @@ end)
 
 exports('GetJobGarages', function()
     local list = {}
-    for _, g in pairs(JobGarageCache) do
+    for _i, g in pairs(JobGarageCache) do
         list[#list + 1] = g
     end
     return list

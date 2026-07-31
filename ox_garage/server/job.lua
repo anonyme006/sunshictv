@@ -5,7 +5,7 @@
 local ESX = exports['es_extended']:getSharedObject()
 local spawnedJobByPlate = {}
 
-local function _(key, ...)
+local function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then return str:format(...) end
     return str
@@ -126,7 +126,7 @@ local function fetchPersonalInJobGarage(identifier, garageId)
     ) or {}
 
     local list = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         local props = decodeProps(row[vehicleCol] or row.vehicle)
         local model = props.model
         if type(model) == 'string' then model = joaat(model) end
@@ -249,7 +249,7 @@ AddEventHandler('ox_garage:syncJobFleetInternal', function(vehicles)
     if type(vehicles) ~= 'table' then return end
 
     local seen = {}
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         local plate = upsertFleetFromTemplate({
             template_id = v.id,
             id = v.id,
@@ -266,7 +266,7 @@ AddEventHandler('ox_garage:syncJobFleetInternal', function(vehicles)
 
     -- Supprime les entrées orphelines liées à un template qui n'existe plus
     local all = MySQL.query.await('SELECT id, template_id FROM ox_garage_job_vehicles WHERE template_id IS NOT NULL') or {}
-    for _, row in ipairs(all) do
+    for _i, row in ipairs(all) do
         if row.template_id and not seen[row.template_id] then
             -- Ne pas supprimer si sync partielle — seulement si vehicles est full dump
             -- On laisse job_creator appeler delete explicitement
@@ -279,7 +279,7 @@ AddEventHandler('ox_garage:fullSyncJobFleet', function(vehicles)
     if type(vehicles) ~= 'table' then return end
 
     local keepTemplates = {}
-    for _, v in ipairs(vehicles) do
+    for _i, v in ipairs(vehicles) do
         upsertFleetFromTemplate({
             template_id = v.id,
             id = v.id,
@@ -295,7 +295,7 @@ AddEventHandler('ox_garage:fullSyncJobFleet', function(vehicles)
     end
 
     local all = MySQL.query.await('SELECT id, template_id FROM ox_garage_job_vehicles WHERE template_id IS NOT NULL') or {}
-    for _, row in ipairs(all) do
+    for _i, row in ipairs(all) do
         if row.template_id and not keepTemplates[row.template_id] then
             MySQL.query.await('DELETE FROM ox_garage_job_vehicles WHERE id = ?', { row.id })
         end
@@ -327,7 +327,7 @@ lib.callback.register('ox_garage:getJobVehicles', function(source, jobName, gara
     end
 
     local list = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         if grade >= (row.min_grade or 0) then
             list[#list + 1] = buildEntry(row)
         end
@@ -335,7 +335,7 @@ lib.callback.register('ox_garage:getJobVehicles', function(source, jobName, gara
 
     -- Véhicules perso rangés ici
     local personal = fetchPersonalInJobGarage(xPlayer.identifier, garageId)
-    for _, entry in ipairs(personal) do
+    for _i, entry in ipairs(personal) do
         list[#list + 1] = entry
     end
 

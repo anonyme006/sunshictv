@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OX Garage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app" class="hidden" aria-hidden="true">
+    <div class="backdrop"></div>
+
+    <section class="shell" role="dialog" aria-modal="true">
+      <header class="top">
+        <div class="brand">
+          <img id="logo" class="brand__logo" src="img/logo.svg" alt="" />
+          <div class="brand__text">
+            <span id="brandName" class="brand__name">OX GARAGE</span>
+            <h1 id="garageTitle" class="brand__title">Garage</h1>
+          </div>
+        </div>
+        <div class="top__meta">
+          <span id="garageType" class="chip">Véhicules</span>
+          <span id="vehicleCount" class="chip chip--soft">0</span>
+          <button id="btnClose" class="btn btn--ghost" type="button" title="Fermer">✕</button>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside class="list-pane">
+          <div class="search">
+            <input id="searchInput" type="search" placeholder="Rechercher nom, modèle, plaque…" autocomplete="off" />
+          </div>
+          <div id="vehicleList" class="vehicle-list"></div>
+          <p id="emptyState" class="empty hidden">Aucun véhicule dans ce garage</p>
+        </aside>
+
+        <main class="detail-pane">
+          <div class="preview">
+            <div class="preview__glow"></div>
+            <div id="previewArt" class="preview__art" data-class="car">
+              <svg viewBox="0 0 240 120" class="preview__svg" aria-hidden="true">
+                <defs>
+                  <linearGradient id="bodyGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.9"/>
+                    <stop offset="100%" stop-color="#fff" stop-opacity="0.35"/>
+                  </linearGradient>
+                </defs>
+                <ellipse cx="120" cy="98" rx="70" ry="8" fill="rgba(0,0,0,0.35)"/>
+                <g id="artCar">
+                  <path d="M40 72h160l-14-28a14 14 0 0 0-12-7H66a14 14 0 0 0-12 7L40 72z" fill="url(#bodyGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="1.5"/>
+                  <path d="M78 44h84l10 20H68l10-20z" fill="rgba(255,255,255,0.12)"/>
+                  <circle cx="72" cy="76" r="12" fill="#0c1016" stroke="var(--accent)" stroke-width="2"/>
+                  <circle cx="168" cy="76" r="12" fill="#0c1016" stroke="var(--accent)" stroke-width="2"/>
+                </g>
+                <g id="artHeli" class="hidden">
+                  <rect x="70" y="28" width="100" height="6" rx="3" fill="var(--accent)"/>
+                  <path d="M95 55h50l8 28H87l8-28z" fill="url(#bodyGrad)" stroke="rgba(255,255,255,0.35)"/>
+                  <path d="M120 55V34" stroke="#fff" stroke-width="2"/>
+                  <path d="M88 88h64" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+                  <circle cx="120" cy="72" r="6" fill="#0c1016" stroke="var(--accent)"/>
+                </g>
+                <g id="artBoat" class="hidden">
+                  <path d="M40 70c20 20 140 20 160 0l-18 28H58L40 70z" fill="url(#bodyGrad)" stroke="rgba(255,255,255,0.35)"/>
+                  <path d="M90 52h60v20H90z" fill="rgba(255,255,255,0.12)"/>
+                </g>
+              </svg>
+            </div>
+            <div class="preview__plate" id="previewPlate">— — — —</div>
+          </div>
+
+          <div class="info">
+            <div class="info__head">
+              <div>
+                <p class="label">Nom</p>
+                <h2 id="infoName">—</h2>
+              </div>
+              <span id="infoStatus" class="status">—</span>
+            </div>
+
+            <div class="stats">
+              <div class="stat">
+                <span class="label">Modèle</span>
+                <strong id="infoModel">—</strong>
+              </div>
+              <div class="stat">
+                <span class="label">Plaque</span>
+                <strong id="infoPlate">—</strong>
+              </div>
+              <div class="stat">
+                <span class="label">Localisation</span>
+                <strong id="infoLocation">—</strong>
+              </div>
+              <div class="stat stat--bar">
+                <div class="stat__row"><span class="label">Moteur</span><span id="infoEngineVal">0%</span></div>
+                <div class="bar"><i id="infoEngine" style="width:0%"></i></div>
+              </div>
+              <div class="stat stat--bar">
+                <div class="stat__row"><span class="label">Carrosserie</span><span id="infoBodyVal">0%</span></div>
+                <div class="bar"><i id="infoBody" style="width:0%"></i></div>
+              </div>
+              <div class="stat stat--bar">
+                <div class="stat__row"><span class="label">Essence</span><span id="infoFuelVal">0%</span></div>
+                <div class="bar"><i id="infoFuel" style="width:0%"></i></div>
+              </div>
+            </div>
+
+            <div class="actions">
+              <button id="btnTakeOut" class="btn btn--primary" type="button" disabled>
+                <span>Sortir</span>
+              </button>
+              <button id="btnManage" class="btn btn--soft hidden" type="button">Gérer places</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

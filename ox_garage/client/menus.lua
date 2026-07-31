@@ -121,12 +121,17 @@ function OpenPrivateAccessMenu(garageId, info)
     lib.showContext('ox_garage_private_' .. garageId)
 end
 
---- Liste véhicules (après accès OK)
+--- Liste véhicules (après accès OK) — NUI premium ou ox_lib
 function OpenGarageVehicleList(garageId)
     local garage = GetGarageById(garageId)
     if not garage then return end
 
     local vehicles = lib.callback.await('ox_garage:getVehicles', false, garageId) or {}
+
+    if Config.UI and Config.UI.mode == 'nui' then
+        OpenGarageNui(garageId, vehicles, { privateOwned = true })
+        return
+    end
 
     if #vehicles == 0 then
         local emptyOptions = {
@@ -482,11 +487,13 @@ function TakeOutVehicle(garageId, vehicle)
     TaskWarpPedIntoVehicle(PlayerPedId(), entity, -1)
     SetModelAsNoLongerNeeded(model)
 
+    local plate = result.plate or props.plate or vehicle.plate
+    GiveVehicleKeys(plate, entity)
+
     Notify(L('notify_spawned', GetVehicleDisplayName(model)), 'success')
-    -- Fermeture auto : pas de menu réouvert
 end
 
---- Ranger (descend d'abord si encore assis)
+--- Ranger : joueur à pied OK (devant / derrière / côté), pas besoin d'être conducteur
 function StoreVehicle(garageId, veh)
     local garage = GetGarageById(garageId)
     if not garage then return end
@@ -495,7 +502,8 @@ function StoreVehicle(garageId, veh)
         return
     end
 
-    if not IsVehicleNearGarageStore(veh, garage) and not IsNearGarageStore(garage) then
+    -- Le véhicule doit être dans la zone ; le joueur peut être à côté
+    if not IsVehicleNearGarageStore(veh, garage) then
         Notify(L('notify_too_far'), 'error')
         return
     end
@@ -538,7 +546,6 @@ function StoreVehicle(garageId, veh)
         return
     end
 
-    -- Re-check distance après la progress (véhicule doit rester sur le point)
     if not IsVehicleNearGarageStore(veh, garage) then
         Notify(L('notify_too_far'), 'error')
         return
@@ -546,7 +553,7 @@ function StoreVehicle(garageId, veh)
 
     local props = GetVehicleProps(veh)
     local netId = NetworkGetNetworkIdFromEntity(veh)
-    local name = GetVehicleDisplayName(GetEntityModel(veh))
+    local plate = props.plate or GetVehicleNumberPlateText(veh)
 
     local result = lib.callback.await('ox_garage:store', false, garageId, netId, props)
     if not result or not result.ok then
@@ -562,10 +569,11 @@ function StoreVehicle(garageId, veh)
         return
     end
 
+    RemoveVehicleKeys(plate)
     if DoesEntityExist(veh) then
         SetEntityAsMissionEntity(veh, true, true)
         DeleteVehicle(veh)
     end
 
-    Notify(L('notify_stored', name), 'success')
+    Notify(L('notify_stored_short'), 'success')
 end

@@ -4,7 +4,7 @@
 
 local ESX = exports['es_extended']:getSharedObject()
 
-local function _(key, ...)
+local function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then return str:format(...) end
     return str
@@ -32,7 +32,7 @@ end
 
 function GetPrivateGarageIds()
     local ids = {}
-    for _, g in ipairs(Config.Garages or {}) do
+    for _i, g in ipairs(Config.Garages or {}) do
         if g.kind == 'private' then
             ids[g.id] = true
         end
@@ -77,7 +77,7 @@ lib.callback.register('ox_garage:getPrivateInfo', function(source, garageId)
     if not xPlayer then return nil end
 
     local garage
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == garageId then garage = g break end
     end
     if not garage or not IsPrivateGarage(garage) then
@@ -107,7 +107,7 @@ lib.callback.register('ox_garage:buyPrivateAccess', function(source, garageId)
     if not xPlayer then return { ok = false, error = 'error' } end
 
     local garage
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == garageId then garage = g break end
     end
     if not garage or not IsPrivateGarage(garage) then
@@ -146,7 +146,7 @@ lib.callback.register('ox_garage:buyPrivateSlot', function(source, garageId)
     if not xPlayer then return { ok = false, error = 'error' } end
 
     local garage
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == garageId then garage = g break end
     end
     if not garage or not IsPrivateGarage(garage) then
