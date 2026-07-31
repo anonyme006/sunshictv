@@ -1,4 +1,5 @@
 local blips = {}
+local storeZoneIds = {}
 
 function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
@@ -23,6 +24,21 @@ function GetGarageById(id)
         if g.id == id then return g end
     end
 end
+
+exports('GetGarages', function()
+    return Config.Garages
+end)
+
+exports('OpenGarage', function(garageId)
+    OpenGarageMenu(garageId)
+end)
+
+exports('OpenGarageStore', function(garageId)
+    local garage = GetGarageById(garageId)
+    if not garage then return end
+    local veh = PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+    OpenStoreMenu(garageId, veh)
+end)
 
 function GetGarageStoreInfo(garage)
     return garage.store or { coords = garage.coords, radius = Config.StoreDistance }
@@ -106,6 +122,9 @@ function IsSpawnPointClear(coords, radius)
 end
 
 function FindFreeSpawn(spawns)
+    if not Config.CheckSpawnClear then
+        return spawns and spawns[1] or nil
+    end
     for _i, s in ipairs(spawns or {}) do
         if IsSpawnPointClear(s, 2.8) then
             return s
@@ -134,7 +153,7 @@ function ReadFuel(vehicle)
     return GetVehicleFuelLevel(vehicle)
 end
 
---- Props complets pour sauvegarde
+--- Props complets pour sauvegarde (moteur, carrosserie, essence, coffre via ESX props)
 function GetVehicleProps(vehicle)
     if ESX.Game and ESX.Game.GetVehicleProperties then
         local props = ESX.Game.GetVehicleProperties(vehicle)
@@ -142,7 +161,6 @@ function GetVehicleProps(vehicle)
         return props
     end
 
-    -- Fallback minimal
     return {
         model = GetEntityModel(vehicle),
         plate = GetVehicleNumberPlateText(vehicle),
@@ -165,102 +183,67 @@ function SetVehicleProps(vehicle, props)
     ApplyFuel(vehicle, props.fuelLevel or props.fuel or 100.0)
 end
 
-local storeMarkers = {}
-
+--- Zone de rangement : BoxZone prioritaire, sinon sphere
 local function registerStoreZone(garage)
     local store = garage.store
     if not store then return end
 
-    local st = store.target or {
-        coords = store.coords or garage.coords,
-        radius = math.min(store.radius or Config.StoreDistance, 5.0),
-        debug = false,
+    local options = {
+        {
+            name = 'ox_garage_store_' .. garage.id,
+            icon = 'fa-solid fa-square-parking',
+            label = L('target_store'),
+            distance = 3.5,
+            canInteract = function()
+                if not IsNearGarageStore(garage) then return false end
+                if PlayerInOwnedVehicle() then return true end
+                return GetClosestVehicleAtStore(garage) ~= nil
+            end,
+            onSelect = function()
+                local veh = PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
+                -- Si plusieurs véhicules : uniquement celui dans la zone (closest)
+                OpenStoreMenu(garage.id, veh)
+            end,
+        },
     }
 
-    exports.ox_target:addSphereZone({
-        coords = st.coords,
-        radius = st.radius or 4.0,
-        debug = st.debug or false,
-        options = {
-            {
-                name = 'ox_garage_store_' .. garage.id,
-                icon = 'fa-solid fa-square-parking',
-                label = L('target_store'),
-                distance = 3.5,
-                canInteract = function()
-                    if not IsNearGarageStore(garage) then return false end
-                    if PlayerInOwnedVehicle() then return true end
-                    return GetClosestVehicleAtStore(garage) ~= nil
-                end,
-                onSelect = function()
-                    local veh = PlayerInOwnedVehicle() or GetClosestVehicleAtStore(garage)
-                    OpenStoreMenu(garage.id, veh)
-                end,
-            },
-        },
-    })
-
-    if store.marker and store.marker.enabled then
-        storeMarkers[#storeMarkers + 1] = {
-            coords = store.coords or st.coords,
-            marker = store.marker,
-            garage = garage,
-        }
+    if Config.UseTarget == false then
+        return
     end
-end
 
---- Blips + ox_target (ouvrir + point ranger dédié)
-CreateThread(function()
-    for _i, garage in ipairs(Config.Garages) do
-        if garage.blip and garage.blip.enabled then
-            local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
-            SetBlipSprite(blip, garage.blip.sprite or 357)
-            SetBlipDisplay(blip, 4)
-            SetBlipScale(blip, garage.blip.scale or 0.75)
-            SetBlipColour(blip, garage.blip.color or 3)
-            SetBlipAsShortRange(blip, true)
-            BeginTextCommandSetBlipName('STRING')
-            AddTextComponentSubstringPlayerName(garage.label)
-            EndTextCommandSetBlipName(blip)
-            blips[#blips + 1] = blip
-        end
-
-        local t = garage.target or { coords = garage.coords, radius = 2.0 }
-        exports.ox_target:addSphereZone({
-            coords = t.coords,
-            radius = t.radius or 2.0,
-            debug = t.debug or false,
-            options = {
-                {
-                    name = 'ox_garage_open_' .. garage.id,
-                    icon = 'fa-solid fa-warehouse',
-                    label = L('target_open'),
-                    distance = 2.0,
-                    onSelect = function()
-                        OpenGarageMenu(garage.id)
-                    end,
-                },
-            },
+    if store.box and store.box.coords then
+        local box = store.box
+        local id = exports.ox_target:addBoxZone({
+            coords = box.coords,
+            size = box.size or vec3(8.0, 6.0, 3.0),
+            rotation = box.rotation or 0.0,
+            debug = box.debug or false,
+            options = options,
         })
-
-        registerStoreZone(garage)
+        storeZoneIds[#storeZoneIds + 1] = id
+    else
+        local st = store.target or {
+            coords = store.coords or garage.coords,
+            radius = math.min(store.radius or Config.StoreDistance, 5.0),
+            debug = false,
+        }
+        local id = exports.ox_target:addSphereZone({
+            coords = st.coords,
+            radius = st.radius or 4.0,
+            debug = st.debug or false,
+            options = options,
+        })
+        storeZoneIds[#storeZoneIds + 1] = id
     end
-end)
 
---- Markers des points de rangement
-CreateThread(function()
-    while true do
-        local sleep = 1000
-        local ped = PlayerPedId()
-        local pCoords = GetEntityCoords(ped)
-
-        for _i, entry in ipairs(storeMarkers) do
-            local m = entry.marker
-            local c = entry.coords
-            local drawDist = m.drawDistance or 35.0
-            local dist = #(pCoords - c)
-            if dist < drawDist then
-                sleep = 0
+    -- Marker via lib.points (pas de boucle permanente globale)
+    if store.marker and store.marker.enabled then
+        local m = store.marker
+        local c = store.coords or (store.box and store.box.coords) or garage.coords
+        lib.points.new({
+            coords = c,
+            distance = m.drawDistance or 35.0,
+            nearby = function()
                 local scale = m.scale or vec3(1.0, 1.0, 1.0)
                 local col = m.color or { r = 255, g = 200, b = 40, a = 150 }
                 DrawMarker(
@@ -276,29 +259,67 @@ CreateThread(function()
                     m.rotate == true,
                     nil, nil, false
                 )
-            end
+            end,
+        })
+    end
+end
+
+--- Blips + ox_target ouvrir
+CreateThread(function()
+    for _i, garage in ipairs(Config.Garages) do
+        if garage.blip and garage.blip.enabled then
+            local blip = AddBlipForCoord(garage.coords.x, garage.coords.y, garage.coords.z)
+            SetBlipSprite(blip, garage.blip.sprite or 357)
+            SetBlipDisplay(blip, 4)
+            SetBlipScale(blip, garage.blip.scale or 0.75)
+            SetBlipColour(blip, garage.blip.color or 3)
+            SetBlipAsShortRange(blip, true)
+            BeginTextCommandSetBlipName('STRING')
+            AddTextComponentSubstringPlayerName(garage.label)
+            EndTextCommandSetBlipName(blip)
+            blips[#blips + 1] = blip
         end
 
-        Wait(sleep)
+        if Config.UseTarget ~= false then
+            local t = garage.target or { coords = garage.coords, radius = 2.0 }
+            exports.ox_target:addSphereZone({
+                coords = t.coords,
+                radius = t.radius or 2.0,
+                debug = t.debug or false,
+                options = {
+                    {
+                        name = 'ox_garage_open_' .. garage.id,
+                        icon = 'fa-solid fa-warehouse',
+                        label = L('target_open'),
+                        distance = 2.0,
+                        onSelect = function()
+                            OpenGarageMenu(garage.id)
+                        end,
+                    },
+                },
+            })
+            registerStoreZone(garage)
+        end
     end
 end)
 
---- Target sur le véhicule au point de rangement (à pied ou dedans)
+--- Target global sur véhicule dans la zone de rangement (à pied, autour, pas besoin d'être conducteur)
 CreateThread(function()
+    if Config.UseTarget == false then return end
+
     exports.ox_target:addGlobalVehicle({
         {
             name = 'ox_garage_store_on_vehicle',
             icon = 'fa-solid fa-square-parking',
-            label = L('target_store_vehicle'),
+            label = L('target_store'),
             distance = 3.0,
             canInteract = function(entity)
                 if not entity or entity == 0 or not DoesEntityExist(entity) then return false end
                 local garage = GetStoreGarageForVehicle(entity)
                 if not garage then return false end
-                -- Joueur proche du point OU du véhicule (après être descendu)
                 local pedCoords = GetEntityCoords(PlayerPedId())
                 local nearStore = IsNearGarageStore(garage)
-                local nearVeh = #(pedCoords - GetEntityCoords(entity)) <= 4.0
+                local nearVeh = #(pedCoords - GetEntityCoords(entity)) <= (Config.StoreDistance + 1.0)
                 return nearStore or (nearVeh and IsVehicleNearGarageStore(entity, garage))
             end,
             onSelect = function(data)
@@ -309,7 +330,8 @@ CreateThread(function()
                     Notify(L('notify_too_far'), 'error')
                     return
                 end
-                OpenStoreMenu(garage.id, veh)
+                -- Ranger directement (fluide) ou menu confirm
+                StoreVehicle(garage.id, veh)
             end,
         },
     })

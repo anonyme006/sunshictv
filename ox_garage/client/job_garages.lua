@@ -105,30 +105,18 @@ local function registerJobGarage(garage)
                     if not job or job.name ~= garage.job then return false end
                     if (job.grade or 0) < (garage.min_grade or 0) then return false end
                     local veh = PlayerInOwnedVehicle()
-                    if not veh then return false end
-                    return #(GetEntityCoords(veh) - storeCoords) <= storeRadius
-                end,
-                onSelect = function()
-                    local veh = PlayerInOwnedVehicle()
-                    if not veh then return end
-                    local plate = GetVehicleNumberPlateText(veh)
-                    local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
-                    if jobVeh then
-                        OpenJobStoreMenu(menuData, veh, jobVeh)
-                        return
+                    if veh and #(GetEntityCoords(veh) - storeCoords) <= storeRadius then
+                        return true
                     end
-                    if Config.JobCreator and Config.JobCreator.allowPersonalVehicles ~= false then
-                        local personal = lib.callback.await('ox_garage:getVehicle', false, plate)
-                        if personal then
-                            OpenJobStoreMenu(menuData, veh, {
-                                plate = personal.plate,
-                                model = personal.model,
-                                isPersonal = true,
-                            })
-                            return
+                    for _i, v in ipairs(GetGamePool('CVehicle')) do
+                        if #(GetEntityCoords(v) - storeCoords) <= storeRadius then
+                            return true
                         end
                     end
-                    Notify(L('job_not_job_vehicle'), 'error')
+                    return false
+                end,
+                onSelect = function()
+                    exports.ox_garage:OpenJobStore(menuData)
                 end,
             },
         },
@@ -139,7 +127,7 @@ end
 
 RegisterNetEvent('ox_garage:syncJobGarages', function(list)
     clearAllJobGarages()
-    for _, garage in ipairs(list or {}) do
+    for _i, garage in ipairs(list or {}) do
         registerJobGarage(garage)
     end
 end)
@@ -148,7 +136,7 @@ CreateThread(function()
     Wait(1500)
     local list = lib.callback.await('ox_garage:getJobGarages', false) or {}
     clearAllJobGarages()
-    for _, garage in ipairs(list) do
+    for _i, garage in ipairs(list) do
         registerJobGarage(garage)
     end
 end)
@@ -213,7 +201,7 @@ RegisterCommand('listjobgarages', function()
     end
 
     local options = {}
-    for _, g in ipairs(list) do
+    for _i, g in ipairs(list) do
         options[#options + 1] = {
             title = g.label or g.id,
             description = ('%s  ·  %s'):format(g.job or '?', g.id),

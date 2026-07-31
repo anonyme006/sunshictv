@@ -83,6 +83,12 @@ function OpenJobGarageMenu(data)
     end
 
     local vehicles = result.vehicles or {}
+
+    if Config.UI and Config.UI.mode == 'nui' then
+        OpenJobGarageNui(data, vehicles)
+        return
+    end
+
     local ctxId = ('ox_garage_job_%s_%s'):format(data.job, garageId)
 
     if #vehicles == 0 then
@@ -368,12 +374,15 @@ function TakeOutJobVehicle(data, vehicle)
     TaskWarpPedIntoVehicle(PlayerPedId(), entity, -1)
     SetModelAsNoLongerNeeded(model)
 
+    local plate = result.plate or vehicle.plate
+    GiveVehicleKeys(plate, entity)
+
     Notify(L('notify_spawned', result.label or displayName(vehicle)), 'success')
 end
 
 function StoreJobVehicle(data, veh)
     if not veh or not DoesEntityExist(veh) then
-        Notify(L('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_no_vehicle_store'), 'error')
         return
     end
 
@@ -383,6 +392,21 @@ function StoreJobVehicle(data, veh)
             Notify(L('notify_too_far'), 'error')
             return
         end
+    end
+
+    local ped = PlayerPedId()
+    if IsPedInVehicle(ped, veh, false) then
+        TaskLeaveVehicle(ped, veh, 16)
+        local timeout = GetGameTimer() + 4000
+        while IsPedInVehicle(ped, veh, false) and GetGameTimer() < timeout do
+            Wait(100)
+        end
+        Wait(400)
+    end
+
+    if not DoesEntityExist(veh) then
+        Notify(L('notify_error'), 'error')
+        return
     end
 
     local success = lib.progressCircle({
@@ -405,9 +429,17 @@ function StoreJobVehicle(data, veh)
         return
     end
 
+    if data.store and data.store.coords then
+        local radius = data.store.radius or Config.StoreDistance
+        if #(GetEntityCoords(veh) - data.store.coords) > radius then
+            Notify(L('notify_too_far'), 'error')
+            return
+        end
+    end
+
     local props = GetVehicleProps(veh)
     local netId = NetworkGetNetworkIdFromEntity(veh)
-    local name = GetVehicleDisplayName(GetEntityModel(veh))
+    local plate = props.plate or GetVehicleNumberPlateText(veh)
 
     local result = lib.callback.await('ox_garage:storeJob', false, data.job, data.garageId, netId, props)
     if not result or not result.ok then
@@ -421,14 +453,30 @@ function StoreJobVehicle(data, veh)
         return
     end
 
-    TaskLeaveVehicle(PlayerPedId(), veh, 16)
-    Wait(800)
+    RemoveVehicleKeys(plate)
     if DoesEntityExist(veh) then
         SetEntityAsMissionEntity(veh, true, true)
         DeleteVehicle(veh)
     end
 
-    Notify(L('notify_stored', result.label or name), 'success')
+    Notify(L('notify_stored_short'), 'success')
+end
+
+local function resolveStoreVehicle(data)
+    local veh = PlayerInOwnedVehicle()
+    if veh then return veh end
+    if data and data.store and data.store.coords then
+        local maxDist = data.store.radius or Config.StoreDistance
+        local best, bestDist
+        for _i, v in ipairs(GetGamePool('CVehicle')) do
+            local d = #(GetEntityCoords(v) - data.store.coords)
+            if d <= maxDist and (not bestDist or d < bestDist) then
+                best, bestDist = v, d
+            end
+        end
+        return best
+    end
+    return nil
 end
 
 --- Exports pour job_creator
@@ -441,25 +489,21 @@ exports('OpenJobGarage', function(data)
 end)
 
 exports('OpenJobStore', function(data)
-    local veh = PlayerInOwnedVehicle()
+    local veh = resolveStoreVehicle(data)
     if not veh then
-        Notify(L('notify_not_in_vehicle'), 'error')
+        Notify(L('notify_no_vehicle_store'), 'error')
         return
     end
     local plate = GetVehicleNumberPlateText(veh)
     local jobVeh = lib.callback.await('ox_garage:getJobVehicle', false, plate)
     if jobVeh then
-        OpenJobStoreMenu(data, veh, jobVeh)
+        StoreJobVehicle(data, veh)
         return
     end
     if allowPersonal() then
         local personal = lib.callback.await('ox_garage:getVehicle', false, plate)
         if personal then
-            OpenJobStoreMenu(data, veh, {
-                plate = personal.plate,
-                model = personal.model,
-                isPersonal = true,
-            })
+            StoreJobVehicle(data, veh)
             return
         end
     end

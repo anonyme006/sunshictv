@@ -4,7 +4,7 @@
 
 local ESX = exports['es_extended']:getSharedObject()
 
-local function _(key, ...)
+local function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then return str:format(...) end
     return str
@@ -35,7 +35,7 @@ local function fuelLevel(props)
 end
 
 function GetImpoundById(id)
-    for _, imp in ipairs(Config.Impounds or {}) do
+    for _i, imp in ipairs(Config.Impounds or {}) do
         if imp.id == id then return imp end
     end
 end
@@ -48,7 +48,7 @@ end
 --- Liste des ids fourrière (pour exclure des garages normaux)
 function GetImpoundIds()
     local ids = {}
-    for _, imp in ipairs(Config.Impounds or {}) do
+    for _i, imp in ipairs(Config.Impounds or {}) do
         ids[#ids + 1] = imp.id
     end
     return ids
@@ -143,7 +143,7 @@ lib.callback.register('ox_garage:getImpoundVehicles', function(source, impoundId
     end
 
     local list = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         list[#list + 1] = buildImpoundEntry(row, impoundId)
     end
     table.sort(list, function(a, b) return (a.plate or '') < (b.plate or '') end)
@@ -432,7 +432,7 @@ local function forceImpoundAllOut(impoundId)
     ]]):format(plateCol, garageCol, storedCol, tbl, storedCol, storedCol, storedCol)) or {}
 
     local plates = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         local plate = normalizePlate(row.plate)
         local ok = forceImpoundPlate(plate, impoundId)
         if ok then

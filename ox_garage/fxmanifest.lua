@@ -4,8 +4,17 @@ lua54 'yes'
 
 name 'ox_garage'
 author 'sunshictv'
-description 'Garage moderne ox_lib + ox_target — perso, entreprise, fourrière générale & mécano'
-version '1.0.0'
+description 'Garage premium NUI + ox_target — perso, hélicos, entreprise, fourrière'
+version '2.0.0'
+
+ui_page 'html/index.html'
+
+files {
+    'html/index.html',
+    'html/css/style.css',
+    'html/js/app.js',
+    'html/img/logo.svg',
+}
 
 shared_scripts {
     '@es_extended/imports.lua',
@@ -16,6 +25,8 @@ shared_scripts {
 
 client_scripts {
     'client/main.lua',
+    'client/keys.lua',
+    'client/nui.lua',
     'client/menus.lua',
     'client/job.lua',
     'client/job_garages.lua',

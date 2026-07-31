@@ -40,7 +40,7 @@ MySQL.ready(function()
     end)
 end)
 
-local function _(key, ...)
+local function L(key, ...)
     local str = Locales[Config.Locale] and Locales[Config.Locale][key] or key
     if select('#', ...) > 0 then
         return str:format(...)
@@ -165,7 +165,7 @@ local function fetchVehicles(identifier, garage)
     local rows = MySQL.query.await(query, params) or {}
     local privateIds = GetPrivateGarageIds and GetPrivateGarageIds() or {}
     local list = {}
-    for _, row in ipairs(rows) do
+    for _i, row in ipairs(rows) do
         local gCol = row[Config.Columns.garage] or row.parking or row.garage
         if IsImpoundGarageId and IsImpoundGarageId(gCol) then
             goto continue
@@ -189,7 +189,7 @@ local function fetchVehicles(identifier, garage)
 end
 
 local function findGarage(garageId)
-    for _, g in ipairs(Config.Garages) do
+    for _i, g in ipairs(Config.Garages) do
         if g.id == garageId then return g end
     end
 end
@@ -370,13 +370,21 @@ lib.callback.register('ox_garage:store', function(source, garageId, netId, props
         return { ok = false, error = 'not_yours' }
     end
 
-    -- Vérifie distance du joueur au garage
+    -- Joueur proche du point + véhicule dans la zone (pas besoin d'être assis)
     local ped = GetPlayerPed(source)
     local pCoords = GetEntityCoords(ped)
     local storeCoords = garage.store and garage.store.coords or garage.coords
     local maxDist = (garage.store and garage.store.radius) or Config.StoreDistance
-    if #(pCoords - storeCoords) > (maxDist + 5.0) then
+    if #(pCoords - storeCoords) > (maxDist + 6.0) then
         return { ok = false, error = 'too_far' }
+    end
+
+    local entity = netId and NetworkGetEntityFromNetworkId(netId)
+    if entity and entity ~= 0 and DoesEntityExist(entity) then
+        local vCoords = GetEntityCoords(entity)
+        if #(vCoords - storeCoords) > (maxDist + 2.0) then
+            return { ok = false, error = 'too_far' }
+        end
     end
 
     -- Garage privé : accès + places
