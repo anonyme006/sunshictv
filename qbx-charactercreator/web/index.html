@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Création de personnage</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div id="app" class="hidden" aria-hidden="true">
+        <div class="grain"></div>
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark"></span>
+                <div>
+                    <p class="eyebrow">Studio identité</p>
+                    <h1 id="ui-title">Création de personnage</h1>
+                </div>
+            </div>
+            <div class="progress-wrap">
+                <div class="progress-meta">
+                    <span id="step-label">Étape 1 sur 9</span>
+                    <span id="category-label">Identité</span>
+                </div>
+                <div class="progress-track">
+                    <div id="progress-bar" class="progress-bar"></div>
+                </div>
+            </div>
+        </header>
+
+        <aside class="sidebar">
+            <nav id="category-list" class="category-list"></nav>
+        </aside>
+
+        <main class="panel">
+            <section class="panel-head">
+                <p class="eyebrow" id="panel-eyebrow">Catégorie</p>
+                <h2 id="panel-title">Identité</h2>
+                <p class="panel-hint" id="panel-hint">Renseignez l’identité officielle de votre personnage.</p>
+            </section>
+            <div id="fields" class="fields"></div>
+        </main>
+
+        <section class="stage" id="stage">
+            <div class="rotate-tools">
+                <button type="button" class="icon-btn" data-rotate="-8" id="btn-rot-left" title="Rotation gauche">‹</button>
+                <button type="button" class="icon-btn" data-rotate="reset" id="btn-rot-reset" title="Réinitialiser la rotation">◎</button>
+                <button type="button" class="icon-btn" data-rotate="8" id="btn-rot-right" title="Rotation droite">›</button>
+            </div>
+            <p class="stage-hint">Glissez pour faire tourner le personnage</p>
+        </section>
+
+        <footer class="actions">
+            <div class="actions-left">
+                <button type="button" class="btn ghost" id="btn-reset">Réinitialiser</button>
+                <button type="button" class="btn ghost" id="btn-cancel">Annuler</button>
+            </div>
+            <div class="actions-right">
+                <button type="button" class="btn" id="btn-prev">Retour</button>
+                <button type="button" class="btn primary" id="btn-next">Continuer</button>
+            </div>
+        </footer>
+    </div>
+
+    <div id="modal" class="modal hidden">
+        <div class="modal-card">
+            <h3 id="modal-title">Confirmer</h3>
+            <p id="modal-text"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn" id="modal-no">Retour</button>
+                <button type="button" class="btn primary" id="modal-yes">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toasts" class="toasts"></div>
+
+    <script src="components/icons.js"></script>
+    <script src="components/controls.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
