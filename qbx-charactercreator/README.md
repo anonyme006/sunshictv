@@ -31,6 +31,16 @@ Optionnel :
 - `illenium-appearance` si `Config.ClothingSystem = 'illenium-appearance'`
 - `ox_target` / `ox_inventory` (désactivation automatique pendant le studio)
 
+## Preview navigateur
+
+Une preview hors FiveM est incluse pour visualiser l’interface :
+
+1. Ouvrir `qbx-charactercreator/web/preview.html` dans un navigateur
+   (ou servir le dossier `web/` : `python3 -m http.server 8765 --directory qbx-charactercreator/web`)
+2. Aller sur `http://127.0.0.1:8765/preview.html`
+
+La silhouette remplace le ped GTA. En jeu, le vrai personnage s’affiche en temps réel derrière la NUI.
+
 ## Installation
 
 1. Copier le dossier `qbx-charactercreator` dans `resources`.

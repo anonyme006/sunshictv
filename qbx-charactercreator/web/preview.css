@@ -1,0 +1,59 @@
+.preview-body {
+    background: #07070a;
+}
+
+.studio {
+    position: fixed;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 70% 40%, rgba(214, 176, 118, 0.16), transparent 36%),
+        radial-gradient(ellipse at 50% 100%, rgba(40, 32, 22, 0.7), transparent 50%),
+        linear-gradient(180deg, #14151a 0%, #0a0a0d 58%, #15110c 100%);
+}
+
+.studio-floor {
+    position: absolute;
+    left: 18%;
+    right: 0;
+    bottom: 8%;
+    height: 42%;
+    background: radial-gradient(ellipse at 55% 0%, rgba(214, 176, 118, 0.12), transparent 55%);
+}
+
+.studio-glow {
+    position: absolute;
+    right: 18%;
+    top: 18%;
+    width: 280px;
+    height: 280px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 220, 160, 0.18), transparent 70%);
+    filter: blur(8px);
+}
+
+.character {
+    position: absolute;
+    right: 16%;
+    bottom: 11%;
+    width: min(280px, 22vw);
+    transition: transform 180ms ease;
+}
+
+.character-svg { width: 100%; height: auto; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55)); }
+.character-light {
+    position: absolute;
+    inset: 8% 18% auto;
+    height: 40%;
+    background: radial-gradient(circle, rgba(255,236,210,.18), transparent 70%);
+}
+
+.preview-badge {
+    position: fixed;
+    right: 18px;
+    bottom: 14px;
+    z-index: 40;
+    color: #d6b076;
+    letter-spacing: 0.16em;
+    font-size: 10px;
+    opacity: 0.7;
+}

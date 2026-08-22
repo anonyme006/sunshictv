@@ -1,0 +1,180 @@
+(() => {
+    const locales = {
+        ui: {
+            title: 'Création de personnage',
+            step: 'Étape',
+            of: 'sur',
+            previous: 'Retour',
+            next: 'Continuer',
+            confirm: 'Confirmer',
+            cancel: 'Annuler',
+            reset: 'Réinitialiser',
+            confirm_title: 'Valider ce personnage ?',
+            confirm_text: 'Cette apparence sera enregistrée et vous entrerez en ville.',
+            cancel_title: 'Annuler la création ?',
+            cancel_text: 'Les modifications non enregistrées seront perdues. Une sauvegarde temporaire peut être conservée.',
+        },
+        categories: {
+            identity: 'Identité',
+            heritage: 'Parents',
+            face: 'Visage',
+            hair: 'Cheveux',
+            eyes: 'Yeux',
+            skin: 'Peau',
+            makeup: 'Maquillage',
+            clothing: 'Vêtements',
+            accessories: 'Accessoires',
+        },
+        identity: {
+            firstname: 'Prénom',
+            lastname: 'Nom',
+            birthdate: 'Date de naissance',
+            gender: 'Sexe',
+            male: 'Homme',
+            female: 'Femme',
+            height: 'Taille (cm)',
+            nationality: 'Nationalité',
+        },
+        notify: {
+            invalid_firstname: 'Prénom invalide.',
+            invalid_lastname: 'Nom invalide.',
+            invalid_birthdate: 'Date de naissance invalide.',
+            invalid_age: 'Âge invalide pour ce serveur.',
+            save_error: 'Impossible d’enregistrer le personnage.',
+        },
+    };
+
+    const payload = {
+        mode: 'create',
+        first: true,
+        allowCancel: true,
+        identity: {
+            firstname: 'Léa',
+            lastname: 'Moreau',
+            birthdate: '1998-04-12',
+            gender: 1,
+            height: 172,
+            nationality: 'Française',
+        },
+        appearance: {
+            model: 'mp_f_freemode_01',
+            heritage: { mother: 31, father: 0, resemblance: 0.42, faceResemblance: 0.42, skinMix: 0.35 },
+            face: {
+                noseWidth: 0.12, nosePeakHeight: -0.08, nosePeakLength: 0.05, noseBoneHeight: 0.0,
+                nosePeakLowering: 0.0, noseBoneTwist: 0.0, eyebrowHeight: 0.1, eyebrowDepth: 0.05,
+                cheekboneHeight: 0.18, cheekboneWidth: 0.1, cheeksWidth: -0.05, eyesOpening: 0.12,
+                lipsThickness: 0.08, jawBoneWidth: -0.04, jawBoneLength: 0.02, chinBoneLowering: 0.0,
+                chinBoneLength: 0.04, chinBoneWidth: 0.0, chinDimple: 0.0, neckThickness: 0.0,
+            },
+            hair: { style: 15, texture: 0, color: 4, highlight: 2 },
+            overlays: {
+                blemishes: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                beard: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                eyebrows: { style: 3, opacity: 1, color: 4, secondColor: 0 },
+                ageing: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                makeup: { style: 2, opacity: 0.35, color: 8, secondColor: 0 },
+                blush: { style: 1, opacity: 0.2, color: 6, secondColor: 0 },
+                complexion: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                sunDamage: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                lipstick: { style: 2, opacity: 0.45, color: 12, secondColor: 0 },
+                moles: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                chestHair: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+                bodyBlemishes: { style: 0, opacity: 0, color: 0, secondColor: 0 },
+            },
+            eyes: { color: 3, size: 0.1, opening: 0.12, position: 0.05 },
+            clothing: {
+                components: {
+                    1: { drawable: 0, texture: 0 },
+                    3: { drawable: 15, texture: 0 },
+                    4: { drawable: 15, texture: 3 },
+                    5: { drawable: 0, texture: 0 },
+                    6: { drawable: 35, texture: 0 },
+                    7: { drawable: 0, texture: 0 },
+                    8: { drawable: 14, texture: 0 },
+                    9: { drawable: 0, texture: 0 },
+                    10: { drawable: 0, texture: 0 },
+                    11: { drawable: 15, texture: 3 },
+                },
+                props: {
+                    0: { drawable: -1, texture: -1 },
+                    1: { drawable: -1, texture: -1 },
+                    2: { drawable: -1, texture: -1 },
+                    6: { drawable: -1, texture: -1 },
+                    7: { drawable: -1, texture: -1 },
+                },
+            },
+        },
+        categories: ['identity', 'heritage', 'face', 'hair', 'eyes', 'skin', 'makeup', 'clothing', 'accessories'],
+        locales,
+        parents: {
+            fathers: [
+                { id: 0, label: 'Benjamin' }, { id: 4, label: 'Andrew' }, { id: 15, label: 'Michael' },
+            ],
+            mothers: [
+                { id: 21, label: 'Hannah' }, { id: 31, label: 'Sophia' }, { id: 41, label: 'Emma' },
+            ],
+        },
+        nationalities: ['Française', 'Belge', 'Suisse', 'Canadienne', 'Américaine', 'Espagnole', 'Italienne'],
+        limits: {
+            hair: 40,
+            hairColors: 63,
+            makeupColors: 63,
+            overlays: {
+                blemishes: 23, beard: 28, eyebrows: 33, ageing: 14, makeup: 74, blush: 6,
+                complexion: 11, sunDamage: 10, lipstick: 9, moles: 17, chestHair: 16, bodyBlemishes: 11,
+            },
+            clothing: {
+                components: {
+                    1: { drawable: 20, texture: 4 }, 3: { drawable: 40, texture: 4 }, 4: { drawable: 50, texture: 8 },
+                    5: { drawable: 20, texture: 4 }, 6: { drawable: 40, texture: 6 }, 7: { drawable: 30, texture: 4 },
+                    8: { drawable: 40, texture: 8 }, 9: { drawable: 20, texture: 4 }, 10: { drawable: 20, texture: 4 },
+                    11: { drawable: 60, texture: 8 },
+                },
+                props: {
+                    0: { drawable: 20, texture: 6 }, 1: { drawable: 16, texture: 6 }, 2: { drawable: 10, texture: 4 },
+                    6: { drawable: 12, texture: 4 }, 7: { drawable: 10, texture: 4 },
+                },
+            },
+        },
+        clothingSlots: [
+            { key: 'mask', label: 'Masque', type: 'component', id: 1 },
+            { key: 'arms', label: 'Bras', type: 'component', id: 3 },
+            { key: 'pants', label: 'Pantalon', type: 'component', id: 4 },
+            { key: 'bags', label: 'Sacs', type: 'component', id: 5 },
+            { key: 'shoes', label: 'Chaussures', type: 'component', id: 6 },
+            { key: 'chains', label: 'Chaînes', type: 'component', id: 7 },
+            { key: 'undershirt', label: 'Sous-vêtements', type: 'component', id: 8 },
+            { key: 'vest', label: 'Veste', type: 'component', id: 9 },
+            { key: 'decals', label: 'Accessoires', type: 'component', id: 10 },
+            { key: 'tops', label: 'Haut', type: 'component', id: 11 },
+        ],
+        accessorySlots: [
+            { key: 'hat', label: 'Chapeau', type: 'prop', id: 0 },
+            { key: 'glasses', label: 'Lunettes', type: 'prop', id: 1 },
+            { key: 'ears', label: 'Oreilles', type: 'prop', id: 2 },
+            { key: 'watches', label: 'Montres', type: 'prop', id: 6 },
+            { key: 'bracelets', label: 'Bracelets', type: 'prop', id: 7 },
+        ],
+        config: {
+            minAge: 18, maxAge: 80, minHeight: 140, maxHeight: 210,
+            minName: 2, maxName: 20, sound: false, volume: 0.3,
+            enableMakeup: true, enableClothing: true, enableAccessories: true,
+        },
+    };
+
+    window.addEventListener('load', () => {
+        window.postMessage({ action: 'open', data: payload }, '*');
+    });
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-rotate]');
+        if (!button) return;
+        const figure = document.getElementById('preview-character');
+        if (!figure) return;
+        const current = Number(figure.dataset.angle || 0);
+        const value = button.getAttribute('data-rotate');
+        const next = value === 'reset' ? 0 : current + Number(value) * 3;
+        figure.dataset.angle = String(next);
+        figure.style.transform = `rotateY(${next}deg)`;
+    });
+})();

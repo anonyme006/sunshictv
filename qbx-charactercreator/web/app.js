@@ -52,6 +52,9 @@
     }
 
     async function nui(name, data) {
+        if (window.CREATOR_PREVIEW) {
+            return { ok: true, textureMax: 12 };
+        }
         try {
             const response = await fetch(`https://${resourceName()}/${name}`, {
                 method: 'POST',
