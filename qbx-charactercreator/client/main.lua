@@ -131,19 +131,7 @@ local function startSessionThread()
         while creatorOpen do
             local playerPed = ped()
             DisableAllControlActions(0)
-            EnableControlAction(0, 1, true)
-            EnableControlAction(0, 2, true)
             EnableControlAction(0, 249, true)
-
-            if IsDisabledControlPressed(0, 34) or IsDisabledControlPressed(0, 174) then
-                CreatorCamera.RotatePed(1.6)
-            elseif IsDisabledControlPressed(0, 35) or IsDisabledControlPressed(0, 175) then
-                CreatorCamera.RotatePed(-1.6)
-            end
-
-            if IsDisabledControlJustPressed(0, 45) then
-                CreatorCamera.ResetRotation()
-            end
 
             HideHudAndRadarThisFrame()
             CreatorCamera.UpdateFollow()
@@ -253,7 +241,7 @@ local function openCreator(options)
     startDraftThread()
 
     SetNuiFocus(true, true)
-    SetNuiFocusKeepInput(true)
+    SetNuiFocusKeepInput(false)
     sendNui('open', currentState)
     TriggerServerEvent('qbx-charactercreator:server:setBusy', true)
 

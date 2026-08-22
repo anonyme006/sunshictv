@@ -588,6 +588,8 @@
 
         window.addEventListener('keydown', (event) => {
             if (!state || app.classList.contains('hidden')) return;
+            const tag = (event.target && event.target.tagName) || '';
+            if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
             if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') {
                 nui('rotateCharacter', { action: 'add', delta: 4 });
             }
