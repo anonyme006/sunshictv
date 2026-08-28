@@ -237,17 +237,30 @@
         window.addEventListener('message', (event) => {
             const { action, data } = event.data || {};
             if (action !== 'previewRcore') return;
-            rcoreMock.classList.remove('hidden');
-            rcoreMock.setAttribute('aria-hidden', 'false');
+            const saveBtn = document.getElementById('rcore-mock-save');
+            saveBtn.disabled = true;
             const summary = document.getElementById('rcore-mock-identity');
             if (data) {
-                summary.textContent = `${data.firstname} ${data.lastname} · ${data.birthdate} · ${data.nationality} · ${data.height} cm`;
+                const iso = String(data.birthdate || '');
+                const pretty = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+                    ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`
+                    : iso;
+                summary.textContent = `${data.firstname} ${data.lastname} · ${pretty} · ${data.nationality} · ${data.height} cm`;
             }
+            window.setTimeout(() => {
+                rcoreMock.classList.remove('hidden');
+                rcoreMock.setAttribute('aria-hidden', 'false');
+                spawnMock.classList.add('hidden');
+                saveBtn.disabled = false;
+            }, 350);
         });
 
-        document.getElementById('rcore-mock-save').addEventListener('click', () => {
+        document.getElementById('rcore-mock-save').addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
             rcoreMock.classList.add('hidden');
             spawnMock.classList.remove('hidden');
+            spawnMock.setAttribute('aria-hidden', 'false');
             const summary = document.getElementById('rcore-mock-identity');
             document.getElementById('spawn-mock-text').textContent = summary.textContent
                 ? `Spawn : ${summary.textContent} + apparence rCore Clothing.`

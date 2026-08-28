@@ -456,8 +456,8 @@ h1 { font-size: 24px; }
     inset: 0;
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    padding: 48px 56px;
+    justify-content: flex-start;
+    padding: 48px 40px;
     animation: fadeIn 420ms ease;
     z-index: 5;
 }
