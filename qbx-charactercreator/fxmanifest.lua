@@ -20,6 +20,7 @@ client_scripts {
     'client/clothing.lua',
     'client/camera.lua',
     'client/main.lua',
+    'client/multichar.lua',
 }
 
 server_scripts {
@@ -27,6 +28,7 @@ server_scripts {
     'server/validation.lua',
     'server/database.lua',
     'server/main.lua',
+    'server/multichar.lua',
 }
 
 ui_page 'web/index.html'
@@ -35,6 +37,7 @@ files {
     'web/index.html',
     'web/style.css',
     'web/app.js',
+    'web/multichar.js',
     'web/components/*.js',
     'web/assets/**/*',
 }

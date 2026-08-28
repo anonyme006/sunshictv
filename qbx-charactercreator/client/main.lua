@@ -196,12 +196,15 @@ local function cleanup(restorePrevious)
     TriggerServerEvent('qbx-charactercreator:server:setBusy', false)
 end
 
+local pendingCreateOptions
+
 local function openCreator(options)
     options = options or {}
     if creatorOpen then return end
 
     currentMode = options.mode or 'edit'
     firstCharacter = options.first == true or currentMode == 'register'
+    pendingCreateOptions = options
 
     local allowed = lib.callback.await('qbx-charactercreator:server:canOpen', false, currentMode)
     if not allowed then
@@ -223,10 +226,13 @@ local function openCreator(options)
 
     creatorOpen = true
     ClientUtils.HideHud(true)
-    placeInStudio()
+    if not options.skipStudio then
+        placeInStudio()
+    end
     freezeGameplay(true)
 
     currentState = buildState(currentMode, draft)
+    currentState.allowCancel = options.fromMultichar or (Config.AllowCancel and currentMode ~= 'register')
     Appearance.Apply(ped(), currentState.appearance)
     currentState.limits = Appearance.GetLimits(ped())
     Appearance.PlayCategoryAnimation('identity')
@@ -252,9 +258,20 @@ local function openCreator(options)
 end
 
 local function finishToWorld(success)
+    local fromMultichar = pendingCreateOptions and pendingCreateOptions.fromMultichar
     cleanup(false)
     DoScreenFadeOut(250)
     while not IsScreenFadedOut() do Wait(10) end
+
+    if success and fromMultichar and Config.Multichar.Enabled then
+        ClientUtils.Notify(SharedUtils.Locale('notify.save_success'), 'success')
+        currentState = nil
+        previousSnapshot = nil
+        firstCharacter = false
+        pendingCreateOptions = nil
+        TriggerEvent('qbx-charactercreator:client:afterCreated')
+        return
+    end
 
     if firstCharacter and Config.Spawn.useQboxSpawn == false then
         restoreLocation()
@@ -279,6 +296,7 @@ local function finishToWorld(success)
     currentState = nil
     previousSnapshot = nil
     firstCharacter = false
+    pendingCreateOptions = nil
 end
 
 RegisterNUICallback('ready', function(_, cb)
@@ -420,9 +438,10 @@ RegisterNUICallback('saveCharacter', function(data, cb)
     currentState.identity = data.identity or currentState.identity
     currentState.appearance = data.appearance or currentState.appearance
 
-    local result = lib.callback.await('qbx-charactercreator:server:saveCharacter', false, {
+    const result = lib.callback.await('qbx-charactercreator:server:saveCharacter', false, {
         mode = currentMode,
         first = firstCharacter,
+        cid = pendingCreateOptions and pendingCreateOptions.cid,
         identity = currentState.identity,
         appearance = currentState.appearance,
     })
@@ -444,13 +463,22 @@ RegisterNUICallback('cancelCreator', function(_, cb)
         return
     end
 
-    if firstCharacter and not Config.AllowCancel then
+    if firstCharacter and not Config.AllowCancel and not (pendingCreateOptions and pendingCreateOptions.fromMultichar) then
         ClientUtils.Notify(SharedUtils.Locale('notify.not_allowed'), 'error')
         cb({ ok = false })
         return
     end
 
-    cleanup(true)
+    local returnToSelect = pendingCreateOptions and pendingCreateOptions.fromMultichar and Config.Multichar.Enabled
+    cleanup(not returnToSelect)
+    if returnToSelect then
+        pendingCreateOptions = nil
+        currentState = nil
+        TriggerEvent('qbx-charactercreator:client:returnToSelect')
+        cb({ ok = true })
+        return
+    end
+
     restoreLocation()
     currentState = nil
     cb({ ok = true })
@@ -488,6 +516,7 @@ end)
 
 if Config.Hooks.CreateFirstCharacter then
     RegisterNetEvent('qb-clothes:client:CreateFirstCharacter', function()
+        if Config.Multichar.Enabled then return end
         openCreator({ mode = 'create', first = true })
     end)
 end
@@ -507,6 +536,7 @@ local function maybeOpenMissingAppearance()
         Wait(1500)
         autoOpenQueued = false
         if creatorOpen then return end
+        if Config.Multichar.Enabled and exports[GetCurrentResourceName()]:IsSelectOpen() then return end
         local hasAppearance = lib.callback.await('qbx-charactercreator:server:hasAppearance', false)
         if hasAppearance == false then
             openCreator({ mode = 'create', first = true })

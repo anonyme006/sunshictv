@@ -66,7 +66,7 @@ local function updateQboxCharinfo(source, identity)
     return true
 end
 
-local function maybeCreateCharacter(source, identity, mode)
+local function maybeCreateCharacter(source, identity, mode, cid)
     local player = getPlayer(source)
     if player then
         return true, player.PlayerData.citizenid
@@ -84,6 +84,7 @@ local function maybeCreateCharacter(source, identity, mode)
             gender = identity.gender,
             nationality = identity.nationality,
             height = identity.height,
+            cid = tonumber(cid),
         },
     })
 
@@ -94,6 +95,12 @@ local function maybeCreateCharacter(source, identity, mode)
     player = getPlayer(source)
     if not player then
         return false, 'notify.save_error'
+    end
+
+    if Config.Multichar and Config.Multichar.GiveStarterItems then
+        pcall(function()
+            exports[GetCurrentResourceName()]:GiveStarterItems(source)
+        end)
     end
     return true, player.PlayerData.citizenid
 end
@@ -173,7 +180,7 @@ lib.callback.register('qbx-charactercreator:server:saveCharacter', function(sour
         return { ok = false, error = sanitized }
     end
 
-    local created, citizenid = maybeCreateCharacter(source, sanitized.identity, payload.mode)
+    local created, citizenid = maybeCreateCharacter(source, sanitized.identity, payload.mode, payload.cid)
     if not created then
         return { ok = false, error = citizenid }
     end
@@ -285,6 +292,20 @@ lib.addCommand('charreset', {
     TriggerClientEvent('qbx-charactercreator:client:applyAppearance', target, appearance)
     notify(source, 'notify.reset_success', 'success')
     notify(target, 'notify.reset_success', 'inform')
+end)
+
+lib.addCommand('logout', {
+    help = SharedUtils.Locale('commands.logout'),
+    restricted = Config.Admin.commandGroup,
+}, function(source)
+    if not Config.Multichar.Enabled then
+        notify(source, 'notify.not_allowed', 'error')
+        return
+    end
+    pcall(function()
+        exports.qbx_core:Logout(source)
+    end)
+    TriggerClientEvent('qbx-charactercreator:client:chooseChar', source)
 end)
 
 AddEventHandler('playerDropped', function()

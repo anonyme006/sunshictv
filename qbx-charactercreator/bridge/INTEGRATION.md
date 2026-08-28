@@ -1,41 +1,12 @@
-# Intégration Qbox
+# Intégration Qbox / qbx-multicharacter
 
-`qbx_core` possède déjà un système de **sélection / création de personnages**. Cette ressource ne le remplace pas.
+Cette ressource reprend le **flux** de [qbx-multicharacter](https://github.com/Qbox-project/qbx-multicharacter) (sélection, aperçu ped, création, suppression, spawn) avec les APIs **qbx_core** actuelles et notre NUI.
 
-## Comportement par défaut
+`qbx-multicharacter` officiel n’est plus maintenu : Qbox a intégré le multichar dans `qbx_core`. Ici, le sélecteur est externe et le créateur d’apparence est inclus.
 
-Après `Créer un personnage`, `qbx_core` enregistre l’identité puis déclenche :
+## Configuration Qbox obligatoire
 
-```lua
-TriggerEvent('qb-clothes:client:CreateFirstCharacter')
-```
-
-`qbx-charactercreator` écoute cet événement (`Config.Hooks.CreateFirstCharacter = true`) et ouvre le studio d’apparence.
-
-Le menu ox_lib de `qbx_core` n’est pas modifié. Aucun fichier Qbox n’est écrasé.
-
-## Compatibilité illenium-appearance
-
-Si `illenium-appearance` est installé, les deux ressources peuvent ouvrir un créateur en même temps.
-
-Solutions :
-
-1. Désactiver le hook première création d’illenium, **ou**
-2. Passer `Config.Hooks.CreateFirstCharacter = false` ici et appeler manuellement :
-
-```lua
-exports['qbx-charactercreator']:OpenCreator('create')
-```
-
-3. Ou définir `Config.ClothingSystem = 'illenium-appearance'` pour appliquer les skins via leurs exports, tout en gardant notre NUI.
-
-Les skins sont aussi écrits dans `playerskins` (format illenium) pour que l’aperçu multichar de Qbox continue de fonctionner.
-
-## Remplacer le dialogue d’identité Qbox
-
-Si vous voulez que **toute** la création (identité + apparence) passe par cette ressource :
-
-1. Dans `qbx_core/config/client.lua` :
+Dans `qbx_core/config/client.lua` :
 
 ```lua
 characters = {
@@ -43,34 +14,51 @@ characters = {
 }
 ```
 
-2. Dans votre ressource de sélection de personnages, au clic sur « Créer un personnage » :
+Sans ça, le menu ox_lib de `qbx_core` **et** notre sélecteur s’ouvriront en même temps.
 
-```lua
-exports['qbx-charactercreator']:StartCreator({ mode = 'register', first = true })
+Ne démarrez **pas** `qbx-multicharacter` / `qb-multicharacter` en parallèle.
+
+## Flux
+
+1. Connexion → écran **Sélection de personnage** (emplacements, infos, aperçu ped)
+2. **Entrer en ville** → `exports.qbx_core:Login` puis spawn (appartements / qbx_spawn / spawn par défaut)
+3. **Créer un personnage** → notre studio (identité + apparence)
+4. Validation → Login Qbox + skins `playerskins` + `character_creator`
+5. **Supprimer** → vérification de propriété (license) puis suppression
+
+## Ordre de démarrage
+
+```cfg
+ensure oxmysql
+ensure ox_lib
+ensure qbx_core
+ensure qbx-charactercreator
+# optionnel
+ensure qbx_spawn
+ensure qbx_apartments
+ensure qbx_weathersync
 ```
 
-3. Après validation, le serveur appelle `exports.qbx_core:Login` puis sauvegarde l’apparence.
+## Compatibilité événements
 
-Ne faites cela que si vous avez déjà une ressource externe de multicharactère, ou si vous assumez de désactiver celle de `qbx_core`.
+Les événements historiques de qbx-multicharacter sont écoutés :
 
-## Appels utiles
+- `qb-multicharacter:client:chooseChar`
+- `qbx-charactercreator:client:chooseChar`
 
-```lua
--- Client
-exports['qbx-charactercreator']:OpenCreator('edit')
-exports['qbx-charactercreator']:IsOpen()
-exports['qbx-charactercreator']:ApplyAppearance(ped, appearance)
+Après création, le spawn suit la même logique que qbx-multicharacter (`apartments:client:setupSpawnUI` ou spawn par défaut).
 
--- Serveur
-exports['qbx-charactercreator']:OpenCreator(source, 'edit')
-exports['qbx-charactercreator']:GetAppearance(citizenid)
-exports['qbx-charactercreator']:HasAppearance(citizenid)
-exports['qbx-charactercreator']:ResetAppearance(citizenid, gender)
-```
+## illenium-appearance
 
-Événements :
+L’aperçu des personnages existants lit `playerskins`. Si illenium est démarré, `setPedAppearance` est utilisé quand le skin est au format illenium.
+
+`Config.ClothingSystem = 'illenium-appearance'` reste disponible pour le studio.
+
+## Désactiver le sélecteur
 
 ```lua
-TriggerEvent('qbx-charactercreator:client:open', { mode = 'edit' })
-AddEventHandler('qbx-charactercreator:client:created', function() end)
+Config.Multichar.Enabled = false
+Config.Multichar.TakeOverSession = false
 ```
+
+Le créateur reste utilisable via `/charcreator` et le hook `qb-clothes:client:CreateFirstCharacter`.

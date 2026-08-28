@@ -37,6 +37,29 @@
         </div>
     </div>
 
+    <div id="select" class="select-screen hidden" aria-hidden="true">
+        <div class="grain"></div>
+        <header class="topbar select-topbar">
+            <div class="brand">
+                <span class="brand-mark"></span>
+                <div>
+                    <p class="eyebrow">Studio identité</p>
+                    <h1>Sélection de personnage</h1>
+                </div>
+            </div>
+            <p class="select-count" id="select-count"></p>
+        </header>
+        <aside class="select-panel">
+            <p class="eyebrow">Emplacements</p>
+            <div id="slot-list" class="slot-list"></div>
+            <section class="select-details" id="select-details"></section>
+            <div class="select-actions">
+                <button type="button" class="btn ghost hidden" id="btn-delete">Supprimer</button>
+                <button type="button" class="btn primary" id="btn-play">Entrer en ville</button>
+            </div>
+        </aside>
+    </div>
+
     <div id="app" class="hidden" aria-hidden="true">
         <div class="grain"></div>
         <header class="topbar">
@@ -110,6 +133,7 @@
     <script src="components/icons.js"></script>
     <script src="components/controls.js"></script>
     <script src="app.js"></script>
+    <script src="multichar.js"></script>
     <script src="preview.js"></script>
 </body>
 </html>

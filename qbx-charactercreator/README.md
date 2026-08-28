@@ -1,21 +1,21 @@
 # qbx-charactercreator
 
-Système complet de création de personnage pour **Qbox / qbx_core**.
+Système complet de **sélection + création de personnage** pour **Qbox / qbx_core**, calqué sur le flux de [qbx-multicharacter](https://github.com/Qbox-project/qbx-multicharacter).
 
-Interface NUI sombre, caméra interpolée, aperçu temps réel, validation serveur, sauvegarde oxmysql, brouillon temporaire et commandes administrateur.
+Interface NUI sombre, sélecteur multi-personnages, studio d’apparence, caméra interpolée, aperçu temps réel, validation serveur, sauvegarde oxmysql.
 
 Cette ressource **n’utilise pas ESX ni QBCore**. Elle s’intègre à `qbx_core`, `ox_lib` et `oxmysql`.
 
 ## Analyse du dépôt
 
-Le dépôt `sunshictv` ne contenait aucune ressource FiveM existante. Aucun système de personnages n’a donc été supprimé.
+Le dépôt ne contenait aucune ressource FiveM. `qbx-multicharacter` officiel n’est plus maintenu (Qbox a intégré le multichar dans `qbx_core`).
 
-`qbx_core` fournit d’origine un multicharactère. **Il n’est pas remplacé.** Le créateur s’y greffe :
+Cette ressource **ne supprime pas** `qbx_core`. Elle le remplace **uniquement** si vous activez le sélecteur externe :
 
-- après « Créer un personnage », Qbox déclenche `qb-clothes:client:CreateFirstCharacter`
-- cette ressource ouvre alors le studio
-- l’identité Qbox déjà saisie est préremplie et reste éditable
-- l’apparence est écrite dans `character_creator` **et** `playerskins` (aperçu Qbox / illenium)
+```lua
+-- qbx_core/config/client.lua
+useExternalCharacters = true
+```
 
 Détails : `bridge/INTEGRATION.md`.
 
@@ -37,7 +37,7 @@ Une preview hors FiveM est incluse pour visualiser l’interface :
 
 1. Ouvrir `qbx-charactercreator/web/preview.html` dans un navigateur
    (ou servir le dossier `web/` : `python3 -m http.server 8765 --directory qbx-charactercreator/web`)
-2. Aller sur `http://127.0.0.1:8765/preview.html`
+2. Aller sur `http://127.0.0.1:8765/preview.html` (sélection) ou `http://127.0.0.1:8765/preview.html#create` (studio)
 
 La silhouette remplace le ped GTA. En jeu, le vrai personnage s’affiche en temps réel derrière la NUI.
 
@@ -54,7 +54,9 @@ ensure qbx_core
 ensure qbx-charactercreator
 ```
 
-4. Redémarrer le serveur. Les tables SQL sont créées automatiquement au démarrage.
+4. Dans `qbx_core/config/client.lua`, mettre `useExternalCharacters = true`.
+5. Ne pas démarrer `qbx-multicharacter` / `qb-multicharacter` en même temps.
+6. Redémarrer le serveur. Les tables SQL sont créées automatiquement au démarrage.
 
 ## Installation SQL
 
@@ -91,6 +93,8 @@ Autres options utiles :
 | `Config.Creator.IsolateBucket` | Isole le joueur dans un routing bucket OneSync |
 | `Config.Draft.timeoutMinutes` | Durée de vie du brouillon |
 | `Config.Sound.volume` | Volume des sons NUI |
+| `Config.Multichar.Enabled` | Sélecteur multi-personnages (flux qbx-multicharacter) |
+| `Config.Multichar.DefaultNumberOfCharacters` | Nombre d’emplacements par défaut |
 | `Config.Hooks.CreateFirstCharacter` | Écoute le hook Qbox de première création |
 | `Config.Hooks.AutoOpenIfNoAppearance` | Ouvre le studio si aucune apparence n’existe |
 | `Config.Admin.ace` | Permission ACE des commandes ciblées |
@@ -98,9 +102,13 @@ Autres options utiles :
 
 ## Configuration Qbox
 
-Aucun fichier `qbx_core` n’est modifié.
+Dans `qbx_core/config/client.lua` :
 
-Pour remplacer aussi le dialogue d’identité Qbox, voir `bridge/INTEGRATION.md` (`useExternalCharacters`).
+```lua
+useExternalCharacters = true
+```
+
+Aucun fichier `qbx_core` n’est modifié par cette ressource. Voir `bridge/INTEGRATION.md`.
 
 ## Configuration vêtements
 
@@ -121,6 +129,7 @@ Ajouter un adaptateur plus tard ne nécessite pas de réécrire le créateur.
 | `/charcreator` | Ouvre le créateur sur soi | Joueur connecté |
 | `/charcreator [id]` | Ouvre le créateur sur un joueur | ACE `group.admin` ou permission Qbox `admin` |
 | `/charreset [id]` | Réinitialise l’apparence | ACE `group.admin` |
+| `/logout` | Déconnecte le personnage et rouvre la sélection | ACE `group.admin` |
 
 ## Exports
 
@@ -129,6 +138,8 @@ Ajouter un adaptateur plus tard ne nécessite pas de réécrire le créateur.
 exports['qbx-charactercreator']:OpenCreator('edit')
 exports['qbx-charactercreator']:StartCreator({ mode = 'create', first = true })
 exports['qbx-charactercreator']:IsOpen()
+exports['qbx-charactercreator']:OpenCharacterSelect()
+exports['qbx-charactercreator']:IsSelectOpen()
 exports['qbx-charactercreator']:ApplyAppearance(ped, appearance)
 
 -- Serveur
@@ -153,6 +164,10 @@ exports['qbx-charactercreator']:ResetAppearance(citizenid, gender)
 Une boucle `Wait(0)` n’existe **que pendant** le studio (caméra, lumières, rotation, contrôles). Elle est arrêtée à la fermeture. Caméras, animations, NUI et routing bucket sont nettoyés.
 
 ## Dépannage
+
+**Deux menus de personnages s’affichent**
+- Mettre `useExternalCharacters = true` dans `qbx_core`
+- Arrêter `qbx-multicharacter` / `qb-multicharacter`
 
 **L’interface ne s’ouvre pas**
 - Vérifier `ensure qbx-charactercreator`

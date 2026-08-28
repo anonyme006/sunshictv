@@ -13,6 +13,15 @@
             confirm_text: 'Cette apparence sera enregistrée et vous entrerez en ville.',
             cancel_title: 'Annuler la création ?',
             cancel_text: 'Les modifications non enregistrées seront perdues. Une sauvegarde temporaire peut être conservée.',
+            play: 'Entrer en ville',
+            create: 'Créer un personnage',
+            delete: 'Supprimer',
+            empty_slot: 'Emplacement libre',
+            slot: 'Emplacement',
+            no_character: 'Aucun personnage sur cet emplacement',
+            cash: 'Espèces',
+            bank: 'Banque',
+            job: 'Emploi',
         },
         categories: {
             identity: 'Identité',
@@ -163,7 +172,34 @@
     };
 
     window.addEventListener('load', () => {
-        window.postMessage({ action: 'open', data: payload }, '*');
+        const createPayload = payload;
+        const selectPayload = {
+            characters: [
+                {
+                    citizenid: 'ABC12345',
+                    cid: 1,
+                    charinfo: {
+                        firstname: 'Léa',
+                        lastname: 'Moreau',
+                        birthdate: '1998-04-12',
+                        nationality: 'Française',
+                        gender: 1,
+                    },
+                    money: { cash: 1250, bank: 18400 },
+                    job: { label: 'Citoyenne', grade: 'Civil' },
+                },
+            ],
+            slots: 3,
+            enableDelete: true,
+            translations: payload.locales,
+        };
+
+        if (window.location.hash === '#create') {
+            window.postMessage({ action: 'open', data: createPayload }, '*');
+            return;
+        }
+
+        window.postMessage({ action: 'select', data: selectPayload }, '*');
     });
 
     document.addEventListener('click', (event) => {

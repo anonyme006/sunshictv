@@ -332,3 +332,50 @@ h1 { font-size: 24px; }
     .panel { padding: 16px; }
     .category-list { gap: 4px; }
 }
+
+.select-screen {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: min(420px, 38vw) 1fr;
+    grid-template-rows: 92px 1fr;
+    animation: fadeIn 420ms ease;
+}
+.select-screen.hidden { display: none !important; }
+.select-topbar { grid-column: 1 / 2; }
+.select-count { color: var(--muted); font-size: 13px; align-self: center; }
+.select-panel {
+    margin: 0 0 24px 22px;
+    padding: 20px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    z-index: 2;
+}
+.slot-list { display: flex; flex-direction: column; gap: 8px; overflow: auto; }
+.slot-card {
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    color: var(--ink);
+    border-radius: 14px;
+    padding: 12px 14px;
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+}
+.slot-card.active { border-color: rgba(214, 176, 118, 0.6); background: rgba(214, 176, 118, 0.12); }
+.slot-card.empty { color: var(--muted); }
+.slot-card strong { display: block; font-weight: 600; }
+.slot-card span { color: var(--muted); font-size: 12px; }
+.select-details { color: var(--muted); font-size: 13px; line-height: 1.55; min-height: 84px; }
+.select-details p { margin: 0; }
+.select-actions { display: flex; justify-content: space-between; gap: 10px; margin-top: auto; }
+
+@media (max-width: 1280px) {
+    .select-screen { grid-template-columns: min(340px, 42vw) 1fr; }
+}

@@ -393,6 +393,48 @@ Config.Hooks = {
     AutoOpenIfNoAppearance = true,
 }
 
+-- Sélecteur multi-personnages calqué sur qbx-multicharacter.
+-- Désactivez le multichar interne de qbx_core : useExternalCharacters = true
+Config.Multichar = {
+    Enabled = true,
+    TakeOverSession = true,
+    EnableDeleteButton = true,
+    StartingApartment = true,
+    DefaultNumberOfCharacters = 3,
+    PlayersNumberOfCharacters = {
+        -- ['license2:xxxxxxxx'] = 5,
+    },
+    DefaultSpawn = vec4(-540.58, -212.02, 37.65, 208.88),
+    GiveStarterItems = true,
+    UseCreatorStudio = true,
+    Locations = {
+        {
+            PedCoords = vec4(969.25, 72.61, 116.18, 276.55),
+            CamCoords = vec4(972.2, 72.9, 116.68, 97.27),
+        },
+        {
+            PedCoords = vec4(1104.49, 195.9, -49.44, 44.22),
+            CamCoords = vec4(1102.29, 198.14, -48.86, 225.07),
+        },
+        {
+            PedCoords = vec4(-2163.87, 1134.51, -24.37, 310.05),
+            CamCoords = vec4(-2161.7, 1136.4, -23.77, 131.52),
+        },
+        {
+            PedCoords = vec4(-996.71, -68.07, -99.0, 57.61),
+            CamCoords = vec4(-999.90, -66.30, -98.45, 241.68),
+        },
+        {
+            PedCoords = vec4(-1023.45, -418.42, 67.66, 205.69),
+            CamCoords = vec4(-1021.8, -421.7, 68.14, 27.11),
+        },
+        {
+            PedCoords = vec4(2265.27, 2925.02, -84.8, 267.77),
+            CamCoords = vec4(2268.24, 2925.02, -84.36, 90.88),
+        },
+    },
+}
+
 Config.Admin = {
     ace = 'admin',
     commandGroup = 'group.admin',
@@ -405,6 +447,8 @@ Config.RateLimit = {
     draftMs = 1500,
     openMs = 1000,
     resetMs = 3000,
+    loadMs = 1500,
+    deleteMs = 2500,
 }
 
 Config.HudEvents = {
