@@ -202,6 +202,58 @@ lib.callback.register('qbx-charactercreator:server:saveCharacter', function(sour
     return { ok = true, citizenid = citizenid }
 end)
 
+lib.callback.register('qbx-charactercreator:server:saveIdentity', function(source, payload)
+    if not busy[source] then
+        return { ok = false, error = 'notify.not_in_creator' }
+    end
+
+    if not rateLimit(source, 'save', Config.RateLimit.saveMs) then
+        return { ok = false, error = 'notify.rate_limited' }
+    end
+
+    local ok, sanitized = Validation.IdentityPayload(payload)
+    if not ok then
+        return { ok = false, error = sanitized }
+    end
+
+    local created, citizenid = maybeCreateCharacter(source, sanitized.identity, payload.mode or 'register', payload.cid)
+    if not created then
+        return { ok = false, error = citizenid }
+    end
+
+    local player = getPlayer(source)
+    if not player or player.PlayerData.citizenid ~= citizenid then
+        return { ok = false, error = 'notify.save_error' }
+    end
+
+    updateQboxCharinfo(source, sanitized.identity)
+    Database.UpsertIdentity(citizenid, sanitized.identity)
+    Database.ClearDraft(getLicense(source))
+    memoryDrafts[getLicense(source)] = nil
+    setBucket(source, false)
+    busy[source] = nil
+
+    return { ok = true, citizenid = citizenid }
+end)
+
+RegisterNetEvent('qbx-charactercreator:server:syncGender', function(gender)
+    local source = source
+    gender = tonumber(gender)
+    if gender ~= 0 and gender ~= 1 then return end
+    local player = getPlayer(source)
+    if not player then return end
+    exports.qbx_core:SetCharInfo(source, 'gender', gender)
+    local info = player.PlayerData.charinfo or {}
+    Database.UpsertIdentity(player.PlayerData.citizenid, {
+        firstname = info.firstname or '',
+        lastname = info.lastname or '',
+        birthdate = info.birthdate or '',
+        gender = gender,
+        height = tonumber(info.height) or Config.Identity.defaultHeight,
+        nationality = info.nationality or Config.Identity.defaultNationality,
+    })
+end)
+
 RegisterNetEvent('qbx-charactercreator:server:saveDraft', function(payload)
     local source = source
     if not busy[source] or not Config.Draft.enabled then return end

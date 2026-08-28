@@ -56,6 +56,7 @@ local function sanitizeCharacter(row)
             birthdate = charinfo.birthdate or '',
             nationality = charinfo.nationality or '',
             gender = tonumber(charinfo.gender) or 0,
+            height = tonumber(charinfo.height) or Config.Identity.defaultHeight,
             phone = charinfo.phone,
             account = charinfo.account,
         },
@@ -214,7 +215,6 @@ local function giveStarterItems(source)
 end
 
 exports('GiveStarterItems', giveStarterItems)
-exports('ResourceStarted', resourceStarted)
 
 AddEventHandler('playerJoining', function()
     if not Config.Multichar.Enabled then return end

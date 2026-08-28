@@ -60,6 +60,10 @@ local function applyPreview(citizenid)
         return
     end
 
+    if Rcore.IsAvailable() and Rcore.ApplyPreview(PlayerPedId(), citizenid) then
+        return
+    end
+
     local clothing, model, gender = lib.callback.await('qbx-charactercreator:server:previewPed', false, citizenid)
     if model then
         local modelName = type(model) == 'string' and model or nil
@@ -219,7 +223,9 @@ RegisterNUICallback('selectCreate', function(data, cb)
     end
 
     pendingCid = data and tonumber(data.cid) or nil
-    closeSelect(true)
+    selectOpen = false
+    SetNuiFocus(false, false)
+    sendNui('closeSelect')
     cb({ ok = true })
     Wait(50)
     TriggerEvent('qbx-charactercreator:client:open', {
@@ -227,7 +233,8 @@ RegisterNUICallback('selectCreate', function(data, cb)
         first = true,
         cid = pendingCid,
         fromMultichar = true,
-        skipStudio = not Config.Multichar.UseCreatorStudio,
+        skipStudio = true,
+        identityOnly = true,
     })
 end)
 
@@ -263,22 +270,24 @@ RegisterNetEvent('qb-multicharacter:client:chooseChar', function()
     OpenCharacterSelect()
 end)
 
-RegisterNetEvent('qbx-charactercreator:client:afterCreated', function()
+RegisterNetEvent('qbx-charactercreator:client:releaseSelectScene', function()
+    destroySelectCam()
+    selectOpen = false
+end)
+
+RegisterNetEvent('qbx-charactercreator:client:afterCreated', function(citizenid)
     justCreatedAt = GetGameTimer()
-    spawnAfterSelect(nil)
+    destroySelectCam()
+    spawnAfterSelect(citizenid and { citizenid = citizenid } or nil)
 end)
 
 RegisterNetEvent('qbx-charactercreator:client:returnToSelect', function()
+    destroySelectCam()
     OpenCharacterSelect()
 end)
 
-if Config.Hooks.CreateFirstCharacter then
-    AddEventHandler('qb-clothes:client:CreateFirstCharacter', function()
-        if GetGameTimer() - justCreatedAt < 8000 then
-            CancelEvent()
-        end
-    end)
-end
+-- Ne pas annuler qb-clothes:client:CreateFirstCharacter : rCore Clothing l'utilise
+-- pour ouvrir le créateur d'apparence initial.
 
 if Config.Multichar.Enabled and Config.Multichar.TakeOverSession then
     CreateThread(function()

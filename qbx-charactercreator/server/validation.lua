@@ -99,11 +99,13 @@ function Validation.Identity(identity)
 
     local gender = tonumber(identity.gender)
     if gender ~= 0 and gender ~= 1 then
-        return fail('notify.invalid_gender')
+        gender = 0
     end
 
+    local minHeight = Config.MinHeight or Config.Identity.minHeight
+    local maxHeight = Config.MaxHeight or Config.Identity.maxHeight
     local height = tonumber(identity.height)
-    if not height or height < Config.Identity.minHeight or height > Config.Identity.maxHeight then
+    if not height or height < minHeight or height > maxHeight then
         return fail('notify.invalid_height')
     end
 
@@ -253,6 +255,19 @@ function Validation.Payload(payload)
         identity = identity,
         appearance = appearance,
     }
+end
+
+function Validation.IdentityPayload(payload)
+    if type(payload) ~= 'table' then
+        return fail('notify.invalid_value')
+    end
+
+    local okIdentity, identity = Validation.Identity(payload.identity)
+    if not okIdentity then
+        return false, identity
+    end
+
+    return true, { identity = identity }
 end
 
 function Validation.Draft(payload)

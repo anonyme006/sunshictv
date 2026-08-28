@@ -197,8 +197,172 @@ local function cleanup(restorePrevious)
 end
 
 local pendingCreateOptions
+local identityOpen = false
+local waitingForRcore = false
+local identityThread = false
+local openCreator
+local lastCreatedCitizenId
 
-local function openCreator(options)
+local function usesRcoreAppearance()
+    return Config.ClothingSystem == 'rcore_clothing'
+end
+
+local function shouldOpenIdentityForm(options)
+    options = options or {}
+    if options.identityOnly == false then return false end
+    if options.identityOnly or options.mode == 'register' or options.first == true then
+        return Config.Multichar.IdentityOnly ~= false
+    end
+    return false
+end
+
+local function identityPayload()
+    return {
+        identity = currentState and currentState.identity or SharedUtils.DefaultIdentity(),
+        nationalities = Config.Nationalities,
+        locales = Locales[Config.Locale] or Locales.fr,
+        allowCancel = currentState and currentState.allowCancel,
+        config = {
+            minAge = Config.MinimumAge,
+            maxAge = Config.MaximumAge,
+            minHeight = Config.MinHeight or Config.Identity.minHeight,
+            maxHeight = Config.MaxHeight or Config.Identity.maxHeight,
+            defaultHeight = Config.Identity.defaultHeight,
+            minName = Config.Identity.minNameLength,
+            maxName = Config.Identity.maxNameLength,
+            sound = Config.Sound.enabled,
+            volume = Config.Sound.volume,
+        },
+    }
+end
+
+local function startIdentityThread()
+    if identityThread then return end
+    identityThread = true
+    CreateThread(function()
+        while identityOpen do
+            DisableAllControlActions(0)
+            EnableControlAction(0, 249, true)
+            HideHudAndRadarThisFrame()
+            Wait(0)
+        end
+        identityThread = false
+    end)
+end
+
+local function closeIdentityUi()
+    identityOpen = false
+    SetNuiFocus(false, false)
+    SetNuiFocusKeepInput(false)
+    sendNui('closeIdentity')
+end
+
+local function finishAfterAppearance()
+    waitingForRcore = false
+    Rcore.ClearPending()
+    closeIdentityUi()
+    freezeGameplay(false)
+    ClientUtils.HideHud(false)
+    if Config.Creator.EnableBlur then
+        TriggerScreenblurFadeOut(200)
+    end
+    LocalPlayer.state:set('creatingCharacter', false, true)
+    TriggerServerEvent('qbx-charactercreator:server:setBusy', false)
+
+    local gender = GetEntityModel(PlayerPedId()) == joaat(Config.Models.female) and 1 or 0
+    TriggerServerEvent('qbx-charactercreator:server:syncGender', gender)
+
+    ClientUtils.Notify(SharedUtils.Locale('notify.save_success'), 'success')
+    pendingCreateOptions = nil
+    currentState = nil
+    firstCharacter = false
+    local citizenid = lastCreatedCitizenId
+    lastCreatedCitizenId = nil
+    TriggerEvent('qbx-charactercreator:client:afterCreated', citizenid)
+end
+
+local function handoffToRcore()
+    closeIdentityUi()
+    freezeGameplay(false)
+    if Config.Creator.EnableBlur then
+        TriggerScreenblurFadeOut(200)
+    end
+    TriggerEvent('qbx-charactercreator:client:releaseSelectScene')
+    TriggerServerEvent('qbx-charactercreator:server:setBusy', false)
+
+    waitingForRcore = true
+    Rcore.OnCreatorDone(function()
+        CreateThread(function()
+            if not waitingForRcore then return end
+            Rcore.BlockReopen()
+            Wait(400)
+            finishAfterAppearance()
+        end)
+    end)
+
+    if Rcore.IsAvailable() then
+        Wait(250)
+        Rcore.OpenFirstCharacter()
+        return
+    end
+
+    waitingForRcore = false
+    Rcore.ClearPending()
+    if Config.Rcore and Config.Rcore.FallbackToInternalStudio then
+        openCreator({
+            mode = 'register',
+            first = true,
+            cid = pendingCreateOptions and pendingCreateOptions.cid,
+            fromMultichar = pendingCreateOptions and pendingCreateOptions.fromMultichar,
+            skipStudio = false,
+            identityOnly = false,
+        })
+        return
+    end
+
+    ClientUtils.Notify(SharedUtils.Locale('notify.rcore_missing'), 'error')
+    finishAfterAppearance()
+end
+
+local function openIdentity(options)
+    options = options or {}
+    if identityOpen or creatorOpen or waitingForRcore then return end
+
+    currentMode = options.mode or 'register'
+    firstCharacter = true
+    pendingCreateOptions = options
+
+    local allowed = lib.callback.await('qbx-charactercreator:server:canOpen', false, currentMode)
+    if not allowed then
+        ClientUtils.Notify(SharedUtils.Locale('notify.not_allowed'), 'error')
+        return
+    end
+
+    currentState = {
+        mode = currentMode,
+        first = true,
+        allowCancel = options.fromMultichar == true or Config.AllowCancel == true,
+        identity = {
+            firstname = '',
+            lastname = '',
+            birthdate = '',
+            gender = 0,
+            height = '',
+            nationality = '',
+        },
+    }
+
+    identityOpen = true
+    ClientUtils.HideHud(true)
+    freezeGameplay(true)
+    startIdentityThread()
+    SetNuiFocus(true, true)
+    SetNuiFocusKeepInput(false)
+    sendNui('openIdentity', identityPayload())
+    TriggerServerEvent('qbx-charactercreator:server:setBusy', true)
+end
+
+function openCreator(options)
     options = options or {}
     if creatorOpen then return end
 
@@ -438,7 +602,7 @@ RegisterNUICallback('saveCharacter', function(data, cb)
     currentState.identity = data.identity or currentState.identity
     currentState.appearance = data.appearance or currentState.appearance
 
-    const result = lib.callback.await('qbx-charactercreator:server:saveCharacter', false, {
+    local result = lib.callback.await('qbx-charactercreator:server:saveCharacter', false, {
         mode = currentMode,
         first = firstCharacter,
         cid = pendingCreateOptions and pendingCreateOptions.cid,
@@ -498,11 +662,73 @@ RegisterNUICallback('sound', function(data, cb)
     cb({ ok = true })
 end)
 
+RegisterNUICallback('submitIdentity', function(data, cb)
+    if not identityOpen or type(data) ~= 'table' then
+        cb({ ok = false, error = 'ui.required_fields' })
+        return
+    end
+
+    currentState = currentState or {}
+    currentState.identity = data.identity or currentState.identity
+
+    local result = lib.callback.await('qbx-charactercreator:server:saveIdentity', false, {
+        mode = currentMode,
+        cid = pendingCreateOptions and pendingCreateOptions.cid,
+        identity = currentState.identity,
+    })
+
+    if not result or not result.ok then
+        cb({ ok = false, error = result and result.error or 'notify.save_error' })
+        return
+    end
+
+    cb({ ok = true, citizenid = result.citizenid })
+    lastCreatedCitizenId = result.citizenid
+    CreateThread(handoffToRcore)
+end)
+
+RegisterNUICallback('cancelIdentity', function(_, cb)
+    if not identityOpen then
+        cb({ ok = true })
+        return
+    end
+
+    closeIdentityUi()
+    freezeGameplay(false)
+    ClientUtils.HideHud(false)
+    LocalPlayer.state:set('creatingCharacter', false, true)
+    TriggerServerEvent('qbx-charactercreator:server:setBusy', false)
+
+    local returnToSelect = pendingCreateOptions and pendingCreateOptions.fromMultichar and Config.Multichar.Enabled
+    pendingCreateOptions = nil
+    currentState = nil
+    firstCharacter = false
+    cb({ ok = true })
+
+    if returnToSelect then
+        TriggerEvent('qbx-charactercreator:client:returnToSelect')
+    end
+end)
+
 RegisterNetEvent('qbx-charactercreator:client:open', function(options)
+    options = options or {}
+    if shouldOpenIdentityForm(options) then
+        openIdentity(options)
+        return
+    end
+    if usesRcoreAppearance() and Rcore.IsAvailable() and (options.mode == 'edit' or options.mode == 'admin') then
+        TriggerEvent('rcore_clothing:openClothingShopWithEverythingAndFree')
+        return
+    end
     openCreator(options)
 end)
 
 RegisterNetEvent('qbx-charactercreator:client:forceClose', function()
+    if identityOpen then
+        closeIdentityUi()
+        freezeGameplay(false)
+        ClientUtils.HideHud(false)
+    end
     if creatorOpen then
         cleanup(true)
         restoreLocation()
@@ -514,15 +740,20 @@ RegisterNetEvent('qbx-charactercreator:client:applyAppearance', function(appeara
     Appearance.Apply(ped(), appearance)
 end)
 
-if Config.Hooks.CreateFirstCharacter then
+if Config.Hooks.CreateFirstCharacter and not usesRcoreAppearance() then
     RegisterNetEvent('qb-clothes:client:CreateFirstCharacter', function()
         if Config.Multichar.Enabled then return end
-        openCreator({ mode = 'create', first = true })
+        openIdentity({ mode = 'register', first = true })
     end)
 end
 
 AddEventHandler('onResourceStop', function(resourceName)
     if resourceName ~= GetCurrentResourceName() then return end
+    waitingForRcore = false
+    if identityOpen then
+        closeIdentityUi()
+        freezeGameplay(false)
+    end
     if creatorOpen then
         cleanup(false)
     end
@@ -530,12 +761,13 @@ end)
 
 local autoOpenQueued = false
 local function maybeOpenMissingAppearance()
-    if autoOpenQueued or creatorOpen then return end
+    if autoOpenQueued or creatorOpen or identityOpen or waitingForRcore then return end
+    if usesRcoreAppearance() then return end
     autoOpenQueued = true
     CreateThread(function()
         Wait(1500)
         autoOpenQueued = false
-        if creatorOpen then return end
+        if creatorOpen or identityOpen or waitingForRcore then return end
         if Config.Multichar.Enabled and exports[GetCurrentResourceName()]:IsSelectOpen() then return end
         local hasAppearance = lib.callback.await('qbx-charactercreator:server:hasAppearance', false)
         if hasAppearance == false then
@@ -555,10 +787,19 @@ if Config.Hooks.AutoOpenIfNoAppearance then
 end
 
 exports('OpenCreator', function(mode)
-    openCreator({ mode = mode or 'edit' })
+    TriggerEvent('qbx-charactercreator:client:open', { mode = mode or 'edit' })
+end)
+
+exports('OpenIdentity', function(options)
+    openIdentity(options or { mode = 'register', first = true })
 end)
 
 exports('CloseCreator', function()
+    if identityOpen then
+        closeIdentityUi()
+        freezeGameplay(false)
+        ClientUtils.HideHud(false)
+    end
     if creatorOpen then
         cleanup(true)
         restoreLocation()
@@ -566,7 +807,7 @@ exports('CloseCreator', function()
 end)
 
 exports('IsOpen', function()
-    return creatorOpen
+    return creatorOpen or identityOpen or waitingForRcore
 end)
 
 exports('ApplyAppearance', function(targetPed, data)
@@ -574,5 +815,6 @@ exports('ApplyAppearance', function(targetPed, data)
 end)
 
 exports('StartCreator', function(options)
-    openCreator(options or { mode = 'create', first = true })
+    options = options or { mode = 'register', first = true }
+    TriggerEvent('qbx-charactercreator:client:open', options)
 end)

@@ -15,6 +15,11 @@
             cancel_text: 'Les modifications non enregistrées seront perdues. Une sauvegarde temporaire peut être conservée.',
             play: 'Entrer en ville',
             create: 'Créer un personnage',
+            continue: 'Continuer',
+            required_fields: 'Veuillez remplir tous les champs obligatoires.',
+            identity_title: 'Création du personnage',
+            identity_subtitle: 'Informations personnelles',
+            identity_hint: 'Ces informations seront enregistrées sur votre personnage. L’apparence se configure ensuite.',
             delete: 'Supprimer',
             empty_slot: 'Emplacement libre',
             slot: 'Emplacement',
@@ -41,14 +46,20 @@
             gender: 'Sexe',
             male: 'Homme',
             female: 'Femme',
-            height: 'Taille (cm)',
+            height: 'Taille',
+            height_unit: 'cm',
             nationality: 'Nationalité',
+            day: 'JJ',
+            month: 'MM',
+            year: 'AAAA',
         },
         notify: {
             invalid_firstname: 'Prénom invalide.',
             invalid_lastname: 'Nom invalide.',
             invalid_birthdate: 'Date de naissance invalide.',
             invalid_age: 'Âge invalide pour ce serveur.',
+            invalid_height: 'Taille invalide.',
+            invalid_nationality: 'Nationalité invalide.',
             save_error: 'Impossible d’enregistrer le personnage.',
         },
     };
@@ -123,7 +134,11 @@
                 { id: 21, label: 'Hannah' }, { id: 31, label: 'Sophia' }, { id: 41, label: 'Emma' },
             ],
         },
-        nationalities: ['Française', 'Belge', 'Suisse', 'Canadienne', 'Américaine', 'Espagnole', 'Italienne'],
+        nationalities: [
+            'Française', 'Américaine', 'Anglaise', 'Espagnole', 'Italienne',
+            'Allemande', 'Belge', 'Canadienne', 'Portugaise', 'Néerlandaise',
+            'Suisse', 'Australienne', 'Autre',
+        ],
         limits: {
             hair: 40,
             hairColors: 63,
@@ -165,7 +180,7 @@
             { key: 'bracelets', label: 'Bracelets', type: 'prop', id: 7 },
         ],
         config: {
-            minAge: 18, maxAge: 80, minHeight: 140, maxHeight: 210,
+            minAge: 18, maxAge: 80, minHeight: 150, maxHeight: 200, defaultHeight: 180,
             minName: 2, maxName: 20, sound: false, volume: 0.3,
             enableMakeup: true, enableClothing: true, enableAccessories: true,
         },
@@ -194,8 +209,68 @@
             translations: payload.locales,
         };
 
-        if (window.location.hash === '#create') {
+        const identityPayload = {
+            allowCancel: true,
+            identity: {
+                firstname: '',
+                lastname: '',
+                birthdate: '',
+                height: '',
+                nationality: '',
+            },
+            nationalities: createPayload.nationalities,
+            locales,
+            config: createPayload.config,
+        };
+
+        const rcoreMock = document.getElementById('rcore-mock');
+        const spawnMock = document.getElementById('spawn-mock');
+
+        function openIdentityPreview(data) {
+            document.getElementById('select').classList.add('hidden');
+            document.getElementById('app').classList.add('hidden');
+            rcoreMock.classList.add('hidden');
+            spawnMock.classList.add('hidden');
+            window.postMessage({ action: 'openIdentity', data: data || identityPayload }, '*');
+        }
+
+        window.addEventListener('message', (event) => {
+            const { action, data } = event.data || {};
+            if (action !== 'previewRcore') return;
+            rcoreMock.classList.remove('hidden');
+            rcoreMock.setAttribute('aria-hidden', 'false');
+            const summary = document.getElementById('rcore-mock-identity');
+            if (data) {
+                summary.textContent = `${data.firstname} ${data.lastname} · ${data.birthdate} · ${data.nationality} · ${data.height} cm`;
+            }
+        });
+
+        document.getElementById('rcore-mock-save').addEventListener('click', () => {
+            rcoreMock.classList.add('hidden');
+            spawnMock.classList.remove('hidden');
+            const summary = document.getElementById('rcore-mock-identity');
+            document.getElementById('spawn-mock-text').textContent = summary.textContent
+                ? `Spawn : ${summary.textContent} + apparence rCore Clothing.`
+                : 'Le personnage entre en ville avec l’identité Qbox et l’apparence rCore Clothing.';
+        });
+
+        document.getElementById('btn-play').addEventListener('click', () => {
+            const playBtn = document.getElementById('btn-play');
+            if (playBtn.textContent.includes('Créer')) {
+                openIdentityPreview(identityPayload);
+            }
+        });
+
+        document.getElementById('btn-identity-back').addEventListener('click', () => {
+            window.postMessage({ action: 'select', data: selectPayload }, '*');
+        });
+
+        if (window.location.hash === '#studio') {
             window.postMessage({ action: 'open', data: createPayload }, '*');
+            return;
+        }
+        if (window.location.hash === '#create') {
+            openIdentityPreview(identityPayload);
             return;
         }
 

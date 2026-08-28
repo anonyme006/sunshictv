@@ -30,6 +30,53 @@
         </aside>
     </div>
 
+    <div id="identity" class="identity-screen hidden" aria-hidden="true">
+        <div class="grain identity-grain"></div>
+        <form class="identity-card" id="identity-form" autocomplete="off" novalidate>
+            <p class="eyebrow" id="identity-eyebrow">Informations personnelles</p>
+            <h1 id="identity-title">Création du personnage</h1>
+            <p class="identity-lead" id="identity-hint">Renseignez l’identité officielle. L’apparence se configure ensuite.</p>
+
+            <label class="field">
+                <span class="field-label" id="label-firstname">Prénom</span>
+                <input class="text-input" id="id-firstname" type="text" maxlength="20" spellcheck="false" />
+            </label>
+
+            <label class="field">
+                <span class="field-label" id="label-lastname">Nom</span>
+                <input class="text-input" id="id-lastname" type="text" maxlength="20" spellcheck="false" />
+            </label>
+
+            <div class="field">
+                <span class="field-label" id="label-birthdate">Date de naissance</span>
+                <div class="date-row" aria-label="JJ / MM / AAAA">
+                    <select class="select-input" id="id-day"></select>
+                    <span class="date-sep">/</span>
+                    <select class="select-input" id="id-month"></select>
+                    <span class="date-sep">/</span>
+                    <select class="select-input" id="id-year"></select>
+                </div>
+            </div>
+
+            <label class="field">
+                <span class="field-label" id="label-nationality">Nationalité</span>
+                <select class="select-input" id="id-nationality"></select>
+            </label>
+
+            <label class="field">
+                <span class="field-label" id="label-height">Taille</span>
+                <select class="select-input" id="id-height"></select>
+            </label>
+
+            <p class="identity-error hidden" id="identity-error" role="alert"></p>
+
+            <div class="identity-actions">
+                <button type="button" class="btn ghost hidden" id="btn-identity-back">Retour</button>
+                <button type="submit" class="btn primary" id="btn-identity-continue">Continuer</button>
+            </div>
+        </form>
+    </div>
+
     <div id="app" class="hidden" aria-hidden="true">
         <div class="grain"></div>
         <header class="topbar">
@@ -102,5 +149,6 @@
     <script src="components/controls.js"></script>
     <script src="app.js"></script>
     <script src="multichar.js"></script>
+    <script src="identity.js"></script>
 </body>
 </html>

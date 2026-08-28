@@ -74,6 +74,31 @@ function Database.HasAppearance(citizenid)
     return skin ~= nil
 end
 
+function Database.UpsertIdentity(citizenid, identity)
+    if not citizenid or type(identity) ~= 'table' then return end
+
+    MySQL.query.await([[
+        INSERT INTO character_creator
+            (citizenid, firstname, lastname, birthdate, gender, height, nationality)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            firstname = VALUES(firstname),
+            lastname = VALUES(lastname),
+            birthdate = VALUES(birthdate),
+            gender = VALUES(gender),
+            height = VALUES(height),
+            nationality = VALUES(nationality)
+    ]], {
+        citizenid,
+        identity.firstname,
+        identity.lastname,
+        identity.birthdate,
+        tostring(identity.gender or 0),
+        identity.height,
+        identity.nationality,
+    })
+end
+
 function Database.UpsertCharacter(citizenid, identity, appearance)
     local appearanceJson = json.encode(appearance)
     local clothingJson = json.encode(appearance.clothing or {})

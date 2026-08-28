@@ -4,8 +4,8 @@ lua54 'yes'
 
 name 'qbx-charactercreator'
 author 'sunshictv'
-description 'Système complet de création de personnage pour Qbox / qbx_core'
-version '1.0.0'
+description 'Création Qbox : identité qbx-multicharacter + apparence rCore Clothing'
+version '1.1.0'
 
 shared_scripts {
     '@ox_lib/init.lua',
@@ -19,6 +19,7 @@ client_scripts {
     'client/appearance.lua',
     'client/clothing.lua',
     'client/camera.lua',
+    'client/rcore.lua',
     'client/main.lua',
     'client/multichar.lua',
 }
@@ -37,6 +38,7 @@ files {
     'web/index.html',
     'web/style.css',
     'web/app.js',
+    'web/identity.js',
     'web/multichar.js',
     'web/components/*.js',
     'web/assets/**/*',

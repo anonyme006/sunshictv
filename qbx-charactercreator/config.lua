@@ -3,7 +3,13 @@ Config = {}
 Config.Locale = 'fr'
 Config.Debug = false
 
-Config.ClothingSystem = 'native' -- 'native' | 'illenium-appearance' | 'custom'
+-- Apparence physique : rCore Clothing (visage, parents, vêtements, etc.).
+-- Ne pas recréer ces fonctionnalités dans cette ressource.
+Config.ClothingSystem = 'rcore_clothing' -- 'rcore_clothing' | 'native' | 'illenium-appearance' | 'custom'
+
+-- Taille enregistrée en centimètres dans charinfo.height (Qbox).
+Config.MinHeight = 150
+Config.MaxHeight = 200
 
 Config.CreatorCamera = true
 Config.AllowCancel = true
@@ -63,38 +69,26 @@ Config.Identity = {
     minNameLength = 2,
     maxNameLength = 20,
     allowedNamePattern = '^[%aÀ-ÖØ-öø-ÿ\'%-%s]+$',
-    defaultHeight = 175,
-    minHeight = 140,
-    maxHeight = 210,
+    defaultHeight = 180,
+    minHeight = Config.MinHeight,
+    maxHeight = Config.MaxHeight,
     defaultNationality = 'Française',
-    dateFormat = 'YYYY-MM-DD',
+    dateFormat = 'DD/MM/YYYY',
 }
 
+-- Liste déroulante du formulaire d'identité. Modifiez librement ce tableau.
 Config.Nationalities = {
     'Française',
-    'Belge',
-    'Suisse',
-    'Canadienne',
     'Américaine',
-    'Britannique',
+    'Anglaise',
     'Espagnole',
     'Italienne',
     'Allemande',
+    'Belge',
+    'Canadienne',
     'Portugaise',
-    'Marocaine',
-    'Algérienne',
-    'Tunisienne',
-    'Sénégalaise',
-    'Ivoirienne',
-    'Brésilienne',
-    'Mexicaine',
-    'Colombienne',
-    'Japonaise',
-    'Chinoise',
-    'Coréenne',
-    'Russe',
-    'Polonaise',
-    'Turque',
+    'Néerlandaise',
+    'Suisse',
     'Australienne',
     'Autre',
 }
@@ -388,9 +382,25 @@ Config.Lights = {
 }
 
 Config.Hooks = {
-    -- qbx_core déclenche encore cet événement après la création d'un personnage.
-    CreateFirstCharacter = true,
-    AutoOpenIfNoAppearance = true,
+    -- Ne pas consommer ce hook : rCore Clothing l'écoute pour la création initiale.
+    -- https://documentation.rcore.cz/paid-resources/rcore_clothing/integration/crm_multichar.md
+    CreateFirstCharacter = false,
+    -- L'apparence est gérée par rCore, pas par le studio interne.
+    AutoOpenIfNoAppearance = false,
+}
+
+-- Événements / exports documentés de rCore Clothing uniquement.
+-- Ne pas inventer d'autres noms. Si votre build diverge, vérifiez fxmanifest.lua de rcore_clothing.
+Config.Rcore = {
+    Resource = 'rcore_clothing',
+    -- Méthode prévue pour la création initiale QB / Qbox.
+    FirstCharacterEvent = 'qb-clothes:client:CreateFirstCharacter',
+    -- Fin du créateur d'apparence.
+    DoneEvent = 'rcore_clothing:charcreator:done',
+    SaveSkinEvent = 'rcore_clothing:saveCurrentSkin',
+    ReloadSkinServerEvent = 'rcore_clothing:reloadSkin',
+    -- Si rcore_clothing n'est pas démarré, ouvrir le studio interne (désactivé par défaut).
+    FallbackToInternalStudio = false,
 }
 
 -- Sélecteur multi-personnages calqué sur qbx-multicharacter.
@@ -406,7 +416,9 @@ Config.Multichar = {
     },
     DefaultSpawn = vec4(-540.58, -212.02, 37.65, 208.88),
     GiveStarterItems = true,
-    UseCreatorStudio = true,
+    -- L'apparence se fait dans rCore Clothing, pas dans le studio interne.
+    UseCreatorStudio = false,
+    IdentityOnly = true,
     Locations = {
         {
             PedCoords = vec4(969.25, 72.61, 116.18, 276.55),
